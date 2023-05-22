@@ -66,12 +66,6 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
   )
 }
 
-export const error = (error: any) => {
-  console.error(error)
-
-  systemTgBot.sendMessage(config.systemTelegramChatId, String(error))
-}
-
 export const log = (message: string, color = Color.Magenta) => {
   // eslint-disable-next-line no-console
   console.log(`${color}${message}`)
