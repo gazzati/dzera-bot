@@ -1,5 +1,6 @@
 import DiscordBot, { GatewayIntentBits } from "discord.js"
 import { ChatCompletionRequestMessageRoleEnum, OpenAIApi } from "openai";
+
 import config from "../config";
 
 export const startDiscordBot = (openAIApi: OpenAIApi) => {
@@ -14,42 +15,31 @@ export const startDiscordBot = (openAIApi: OpenAIApi) => {
     //change to const and typo
     let context = initContext()
 
-    try {
-        discordBot.once("ready", ()=> {
-            console.log("Discord bot is ready");
-        })
+    discordBot.on("messageCreate", async (message) => {
+        if (message.author.bot) return
+        
+        const text = message.content
+        const commandBody = text.slice(config.discordPrefix.length);
+        const args = commandBody.split(' ');
+        const command = args.shift()?.toLowerCase(); 
 
-        discordBot.on("messageCreate", async (message) => {
-            if (message.author.bot) return
-            
-            const text = message.content
-            const commandBody = text.slice(config.discordPrefix.length);
-            const args = commandBody.split(' ');
-            const command = args.shift()?.toLowerCase(); 
+        if (command === "reset") {
+            context = initContext()
 
-            if (command === "reset") {
-                context = initContext()
+            message.reply("Я забыла всё о чем мы сейчас говорили)")
+            return
+        }
 
-                message.reply("Я забыла всё о чем мы сейчас говорили)")
-                return
-            }
+        const payload = {role: ChatCompletionRequestMessageRoleEnum.User, content: text}
+        context.push(payload)      
 
-            const payload = {role: ChatCompletionRequestMessageRoleEnum.User, content: text}
-            context.push(payload)
+        const response = await openAIApi.createChatCompletion({ model: config.gptModel, messages: context })
+        const result = response.data.choices[0].message?.content as string
 
-            console.log(context);
-            
+        message.reply(result)
+    });
 
-            const response = await openAIApi.createChatCompletion({ model: config.gptModel, messages: context })
-            const result = response.data.choices[0].message?.content as string
-
-            message.reply(result)
-        });
-
-        discordBot.login(config.discordToken)
-    } catch (error: any) {
-        console.log(error.message);
-    }
+    discordBot.login(config.discordToken)
 }
 
 const initContext = (initMessage = "Теперь тебя зовут, Дзера. Отвечай в женском роде.") => {
