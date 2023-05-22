@@ -69,6 +69,12 @@ bot.on("message", async msg => {
     tgLog({ from, message: text, result })
 
     bot.sendMessage(chat.id, result)
+    entities.Chat.save({ // TODO: remove later
+      id: chat.id,
+      username: chat.username,
+      first_name: chat.first_name,
+      last_name: chat.last_name
+    })
     entities.Story.save({ chat_id: chat.id, content: text })
   } catch (error) {
     tgLog({ from, message: text, error })
