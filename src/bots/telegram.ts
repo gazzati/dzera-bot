@@ -70,6 +70,6 @@ bot.on("message", async msg => {
     entities.Story.save({ chat_id: chat.id, content: text })
   } catch (e) {
     error(e)
-    bot.sendMessage(chat.id, "Sorry, something wrong 🥹")
+    bot.sendMessage(chat.id, "Прости, что то пошло не так, я исправлюсь 🥹")
   }
 })
