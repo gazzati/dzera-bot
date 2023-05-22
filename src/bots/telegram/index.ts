@@ -5,7 +5,9 @@ import config from "@root/config"
 import { openAIApi } from "@root/index"
 
 import { entities } from "@database/data-source"
-import { log, error } from "@helpers/logger"
+import { tgLog } from "@helpers/logger"
+
+import phrases from "./phrases"
 
 const bot = new TelegramBot(config.telegramToken, { polling: true })
 
@@ -24,21 +26,21 @@ bot.on("message", async msg => {
         last_name: chat.last_name
       })
 
-      log({ from, action: text })
-      bot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
+      tgLog({ from, action: text })
+      bot.sendMessage(chat.id, phrases.START_MESSAGE)
       return
 
     case "/reset":
       stories[chat.id] = []
       entities.Story.delete({ chat_id: chat.id })
 
-      log({ from, action: text })
-      bot.sendMessage(chat.id, "Контекст очищен. Я забыла все о чем мы сейчас говорили 🧘‍♀️")
+      tgLog({ from, action: text })
+      bot.sendMessage(chat.id, phrases.RESET_MESSAGE)
       return
 
     case "/help":
-      log({ from, action: text })
-      bot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
+      tgLog({ from, action: text })
+      bot.sendMessage(chat.id, phrases.HELP_MESSAGE)
       return
   }
 
@@ -56,7 +58,7 @@ bot.on("message", async msg => {
 
     stories[chat.id].push(text)
 
-    const messages = stories[chat.id].map(message => ({
+    const messages = [phrases.INIT_MESSAGE, ...stories[chat.id]].map(message => ({
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: message
     }))
@@ -64,12 +66,12 @@ bot.on("message", async msg => {
     const response = await openAIApi.createChatCompletion({ model: config.gptModel, messages })
     const result = response.data.choices[0].message?.content as string
 
-    log({ from, message: text, result })
+    tgLog({ from, message: text, result })
 
     bot.sendMessage(chat.id, result)
     entities.Story.save({ chat_id: chat.id, content: text })
-  } catch (e) {
-    error(e)
-    bot.sendMessage(chat.id, "Прости, что то пошло не так, я исправлюсь 🥹")
+  } catch (error) {
+    tgLog({ from, message: text, error })
+    bot.sendMessage(chat.id, phrases.ERROR_MESSAGE)
   }
 })

@@ -1,9 +1,10 @@
 import DiscordBot, { GatewayIntentBits } from "discord.js"
 import { ChatCompletionRequestMessageRoleEnum } from "openai"
 
+import config from "@root/config"
 import { openAIApi } from "@root/index"
 
-import config from "../config"
+import { log } from "@helpers/logger"
 
 const discordBot = new DiscordBot.Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -17,8 +18,7 @@ const initContext = (initMessage = "Теперь тебя зовут, Дзера
 let context = initContext()
 
 discordBot.once("ready", () => {
-  // eslint-disable-next-line no-console
-  console.log("Discord bot is active!")
+  log("Discord bot is active!")
 })
 
 discordBot.on("messageCreate", async message => {

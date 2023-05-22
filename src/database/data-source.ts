@@ -1,10 +1,10 @@
-/* eslint-disable no-console */
 import { DataSource } from "typeorm"
 
 import config from "@root/config"
 
 import { Chat } from "@database/entities/Chat"
 import { Story } from "@database/entities/Story"
+import { log } from "@helpers/logger"
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -21,7 +21,7 @@ export const AppDataSource = new DataSource({
 })
 
 AppDataSource.initialize()
-  .then(() => console.log(`Connected to the database: ${config.psqlDatabase}`))
+  .then(() => log(`Connected to the database: ${config.psqlDatabase}`))
   .catch(error => console.error(error))
 
 export const entities = {

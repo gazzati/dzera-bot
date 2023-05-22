@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
-import TelegramBot, { User } from "node-telegram-bot-api"
+import { systemTgBot } from "@bots/telegram/system"
+import { User } from "node-telegram-bot-api"
 
 import config from "@root/config"
 
@@ -8,9 +8,20 @@ interface LogArgs {
   action?: string
   message?: string
   result?: string
+  error?: any
 }
 
-const systemBot = new TelegramBot(config.systemTelegramToken, { polling: true })
+enum Color {
+  Reset = "\x1b[0m",
+  Red = "\x1b[31m",
+  Green = "\x1b[32m",
+  Yellow = "\x1b[33m",
+  Blue = "\x1b[34m",
+  Magenta = "\x1b[35m",
+  Cyan = "\x1b[36m",
+  White = "\x1b[37m",
+  DarkBlue = "\x1b[94m"
+}
 
 const padZeros = (value: string | number, chars = 2): string => {
   if (value.toString().length < chars) {
@@ -22,36 +33,46 @@ const padZeros = (value: string | number, chars = 2): string => {
   return value.toString()
 }
 
-export const log = ({ from, action, message, result }: LogArgs) => {
-  const today = new Date()
+export const getLogDate = (today = new Date()): string => {
   const date = `${padZeros(today.getDate())}.${padZeros(today.getMonth() + 1)}.${padZeros(today.getFullYear())}`
   const time = `${padZeros(today.getHours())}:${padZeros(today.getMinutes())}`
 
+  return `[${date} ${time}]`
+}
+
+export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
+  const dateLog = getLogDate()
   const userLog = `${from.username}(${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})`
 
   const actionLog = `ACTION: ${action}`
   const messageLog = `MESSAGE: ${message}`
   const resultLog = `RESULT: ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
 
-  console.log(`\x1b[36m[${date} ${time}]`)
-  console.log(`\x1b[37mUSER: ${userLog}`)
+  log(dateLog, Color.Cyan)
+  log(`USER: ${userLog}`, Color.White)
 
-  if (action) console.log(`\x1b[32m${actionLog}`)
-  if (message) console.log(`\x1b[31m${messageLog}`)
-  if (result) console.log(`\x1b[33m${resultLog}`)
+  if (action) log(actionLog, Color.Green)
+  if (message) log(messageLog, Color.Red)
+  if (result) log(resultLog, Color.Yellow)
+  if (error) error(error)
 
-  console.log(" ")
+  log(" ")
 
-  systemBot.sendMessage(
-    505252572,
+  systemTgBot.sendMessage(
+    config.systemTelegramChatId,
     `USER: ${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
       result ? `\n${resultLog}` : ""
-    }`
+    } ${error ? `\n${String(error)}` : ""}`
   )
 }
 
 export const error = (error: any) => {
   console.error(error)
 
-  systemBot.sendMessage(505252572, String(error))
+  systemTgBot.sendMessage(config.systemTelegramChatId, String(error))
+}
+
+export const log = (message: string, color = Color.Magenta) => {
+  // eslint-disable-next-line no-console
+  console.log(`${color}${message}`)
 }
