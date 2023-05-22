@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  run-action:
+    name: Run action
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install modules
+        run: yarn
+      - name: ESLint
+        run: yarn lint
+      - name: Prettier
+        run: yarn format
+      - name: Typescript
+        run: yarn type
