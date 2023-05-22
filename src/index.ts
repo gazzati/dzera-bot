@@ -16,11 +16,11 @@ bot.on("message", async msg => {
 
   switch(text) {
     case "/start":
-      log(`\n${userLog}\n\x1b[32mACTION: ${text}\n`)
+      log(`${userLog}\n\x1b[32mACTION: ${text}`)
       bot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
       return
     case "/contacts":
-      log(`\n${userLog}\n\x1b[32mACTION: ${text}\n`)
+      log(`${userLog}\n\x1b[32mACTION: ${text}`)
       bot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
       return
   }
@@ -35,7 +35,7 @@ bot.on("message", async msg => {
     const textLog = `\x1b[31mTEXT: ${text}`
     const responseLog = `\x1b[33mRESPONSE: ${result}`
 
-    log(`${userLog}\n${textLog}\n${responseLog}\n`)
+    log(`${userLog}\n${textLog}\n${responseLog}`)
 
     bot.sendMessage(chat.id, result)
   } catch (e) {
@@ -44,7 +44,23 @@ bot.on("message", async msg => {
   }
 })
 
+const padZeros = (value: string | number, chars = 2): string => {
+  if (value.toString().length < chars) {
+    const zeros = chars - value.toString().length
+    const str = new Array(zeros).fill(0)
+    return `${str.join("")}${value}`
+  }
+
+  return value.toString()
+}
+
 const log = (message: string) => {
+  const today = new Date()
+  const date = `${padZeros(today.getDate())}.${padZeros(today.getMonth() + 1)}.${padZeros(today.getFullYear())}`
+  const time = `${padZeros(today.getHours())}:${padZeros(today.getMinutes())}}`
+
   // eslint-disable-next-line no-console
-  console.log(message)
+  console.log(`\x1b[36m[${date} ${time}]\n${message}`)
+  // eslint-disable-next-line no-console
+  console.log("")
 }
