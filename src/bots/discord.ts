@@ -1,6 +1,6 @@
 import DiscordBot, { GatewayIntentBits } from "discord.js"
 import { ChatCompletionRequestMessageRoleEnum, OpenAIApi } from "openai";
-import config from "./config";
+import config from "../config";
 
 export const startDiscordBot = (openAIApi: OpenAIApi) => {
 
