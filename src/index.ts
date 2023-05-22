@@ -16,11 +16,11 @@ bot.on("message", async msg => {
 
   switch(text) {
     case "/start":
-      log(`${userLog}\nACTION: ${text}\n`)
+      log(`\n${userLog}\n\x1b[32mACTION: ${text}\n`)
       bot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
       return
     case "/contacts":
-      log(`${userLog}\nACTION: ${text}\n`)
+      log(`\n${userLog}\n\x1b[32mACTION: ${text}\n`)
       bot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
       return
   }
