@@ -31,7 +31,7 @@ export const log = ({ from, action, message, result }: LogArgs) => {
 
   const actionLog = `ACTION: ${action}`
   const messageLog = `MESSAGE: ${message}`
-  const resultLog = `RESULT: ${result?.slice(0, 50)}`
+  const resultLog = `RESULT: ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
 
   console.log(`\x1b[36m[${date} ${time}]`)
   console.log(`\x1b[37mUSER: ${userLog}`)
