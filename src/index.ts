@@ -62,5 +62,5 @@ const log = (message: string) => {
   // eslint-disable-next-line no-console
   console.log(`\x1b[36m[${date} ${time}]\n${message}`)
   // eslint-disable-next-line no-console
-  console.log("")
+  console.log(" ")
 }
