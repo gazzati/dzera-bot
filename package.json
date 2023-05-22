@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json && cp .env ./build/.env",
-    "start": "node build/server.js",
+    "start": "node build/index.js",
     "dev": "ts-node-dev --respawn --transpile-only --quiet src/index.ts",
     "format": "prettier --write \"src/\"",
     "lint": "eslint src/**/*.ts --fix",
