@@ -28,7 +28,15 @@ bot.on("message", async msg => {
       bot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
       return
 
-    case "/contacts":
+    case "/reset":
+      stories[chat.id] = []
+      entities.Story.delete({ chat_id: chat.id })
+
+      log({ from, action: text })
+      bot.sendMessage(chat.id, "Контекст очищен. Я забыла все о чем мы сейчас говорили 🧘‍♀️")
+      return
+
+    case "/help":
       log({ from, action: text })
       bot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
       return
