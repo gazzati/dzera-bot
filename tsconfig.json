@@ -17,10 +17,9 @@
     "emitDecoratorMetadata": true,
     "paths": {
       "@root/*": ["./*"],
-      // "@database/*": ["./database/*"],
-      // "@interfaces/*": ["./interfaces/*"],
-      // "@config/*": ["./config/*"],
-      // "@api/*": ["./api/*"]
+      "@database/*": ["./database/*"],
+      "@bots/*": ["./bots/*"],
+      "@helpers/*": ["./helpers/*"]
     },
     "typeRoots": ["./node_modules/@types"]
   },
