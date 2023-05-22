@@ -12,6 +12,7 @@
     "type": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "discord.js": "^14.11.0",
     "dotenv": "^16.0.3",
     "joi": "^17.9.2",
     "node-telegram-bot-api": "^0.61.0",

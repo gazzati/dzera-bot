@@ -1,34 +1,38 @@
 import "./aliases"
 
 import TelegramBot from "node-telegram-bot-api"
+import DiscordBot from "discord.js"
 import { Configuration, OpenAIApi, ChatCompletionRequestMessageRoleEnum } from "openai"
 
 import config from "@root/config"
+import { startDiscordBot } from "./discord-bot"
 
-const commands = ["start", "contacts"]
+/* const commands = ["start", "contacts"]
 
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: config.gptKey }))
-const bot = new TelegramBot(config.telegramToken, { polling: true })
+const telegramBot = new TelegramBot(config.telegramToken, { polling: true }) */
 
-bot.onText(/\/start/, function onPhotoText(msg) {
+startDiscordBot()
+
+/* telegramBot.onText(/\/start/, function onPhotoText(msg) {
   const { chat } = msg
 
-  bot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
+  telegramBot.sendMessage(chat.id, `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`)
 })
 
-bot.onText(/\/contacts/, function onPhotoText(msg) {
+telegramBot.onText(/\/contacts/, function onPhotoText(msg) {
   const { chat } = msg
 
-  bot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
+  telegramBot.sendMessage(chat.id, "Если что то не работает, я не при чем 🤪 \nПиши @gazzati")
 })
 
-bot.on("message", async msg => {
+telegramBot.on("message", async msg => {
   const { from, chat, text } = msg
   if (!from || !text || commands.includes(text.replace("/", ""))) return
 
   const payload = { role: ChatCompletionRequestMessageRoleEnum.User, content: text }
 
-  bot.sendChatAction(chat.id, "typing")
+  telegramBot.sendChatAction(chat.id, "typing")
 
   try {
     const response = await openAIApi.createChatCompletion({ model: config.gptModel, messages: [payload] })
@@ -41,9 +45,9 @@ bot.on("message", async msg => {
     // eslint-disable-next-line no-console
     console.log(`${userLog}\n${textLog}\n${responseLog}\n`)
 
-    bot.sendMessage(chat.id, result)
+    telegramBot.sendMessage(chat.id, result)
   } catch (e) {
     console.error(e)
-    bot.sendMessage(chat.id, "Sorry, something wrong 🥹")
+    telegramBot.sendMessage(chat.id, "Sorry, something wrong 🥹")
   }
-})
+}) */
