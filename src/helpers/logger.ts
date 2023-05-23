@@ -41,7 +41,7 @@ export const getLogDate = (today = new Date()): string => {
 }
 
 const getUserLog = (from: User): string => {
-  const userDetails = !from.first_name && !from.last_name
+  const userDetails = from.first_name || from.last_name
     ? ` (${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})`
     : ""
 
@@ -70,7 +70,7 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
   systemTgBot.sendMessage(
     config.systemTelegramChatId,
     `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
-      result ? `\n ${resultLog}` : ""
+      result ? `\n${resultLog}` : ""
     } ${error ? `\n❗️ ${String(error)}` : ""}`
   )
 }
