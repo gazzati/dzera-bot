@@ -1,48 +1,54 @@
-import DiscordBot, { GatewayIntentBits } from "discord.js"
-import { ChatCompletionRequestMessageRoleEnum } from "openai"
+import DiscordBot, { Client, GatewayIntentBits } from "discord.js"
+import {OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai"
 
 import config from "@root/config"
-import { openAIApi } from "@root/index"
 
 import { log } from "@helpers/logger"
 
-const discordBot = new DiscordBot.Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
-})
+class Discord {
+  private openAIApi: OpenAIApi
+  private bot: Client
 
-const initContext = (initMessage = "Теперь тебя зовут, Дзера. Отвечай в женском роде.") => [
-  { role: ChatCompletionRequestMessageRoleEnum.User, content: initMessage }
-]
+  private INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  private context = this.initContext()
 
-//change to const and typo
-let context = initContext()
-
-discordBot.once("ready", () => {
-  log("Discord bot is active!")
-})
-
-discordBot.on("messageCreate", async message => {
-  if (message.author.bot) return
-
-  const text = message.content
-  const commandBody = text.slice(config.discordPrefix.length)
-  const args = commandBody.split(" ")
-  const command = args.shift()?.toLowerCase()
-
-  if (command === "reset") {
-    context = initContext()
-
-    message.reply("Я забыла всё о чем мы сейчас говорили)")
-    return
+  constructor(openAIApi: OpenAIApi) {
+    this.openAIApi = openAIApi
+    this.bot = new DiscordBot.Client({intents: this.INTENTS})
   }
 
-  const payload = { role: ChatCompletionRequestMessageRoleEnum.User, content: text }
-  context.push(payload)
+  public start() {
+    this.bot.once("ready", () => log("Discord bot is active!"))
+    this.bot.login(config.discordToken)
 
-  const response = await openAIApi.createChatCompletion({ model: config.gptModel, messages: context })
-  const result = response.data.choices[0].message?.content as string
+    this.bot.on("messageCreate", async message => {
+      if (message.author.bot) return
 
-  message.reply(result)
-})
+      const text = message.content
+      const commandBody = text.slice(config.discordPrefix.length)
+      const args = commandBody.split(" ")
+      const command = args.shift()?.toLowerCase()
 
-discordBot.login(config.discordToken)
+      if (command === "reset") {
+        this.context = this.initContext()
+
+        message.reply(config.phrases.RESET_MESSAGE)
+        return
+      }
+
+      const payload = { role: ChatCompletionRequestMessageRoleEnum.User, content: text }
+      this.context.push(payload)
+
+      const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages: this.context })
+      const result = response.data.choices[0].message?.content as string
+
+      message.reply(result)
+    })
+  }
+
+  private initContext (): Array<ChatCompletionRequestMessage> {
+    return [{ role: ChatCompletionRequestMessageRoleEnum.User, content: config.phrases.INIT_MESSAGE }]
+  }
+}
+export default Discord
+
