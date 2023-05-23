@@ -54,7 +54,7 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
   if (action) log(actionLog, Color.Green)
   if (message) log(messageLog, Color.Red)
   if (result) log(resultLog, Color.Yellow)
-  if (error) error(error)
+  if (error) console.error(error)
 
   log(" ")
 
