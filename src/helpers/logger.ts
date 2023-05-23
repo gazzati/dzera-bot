@@ -40,16 +40,25 @@ export const getLogDate = (today = new Date()): string => {
   return `[${date} ${time}]`
 }
 
+const getUserLog = (from: User): string => {
+  const userDetails = !from.first_name && !from.last_name
+    ? ` (${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})`
+    : ""
+
+  return`👨‍💻 @${from.username}${userDetails}`
+}
+
 export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
   const dateLog = getLogDate()
-  const userLog = `${from.username}(${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})`
 
-  const actionLog = `ACTION: ${action}`
-  const messageLog = `MESSAGE: ${message}`
-  const resultLog = `RESULT: ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
+  const userLog = getUserLog(from)
+
+  const actionLog = `🔢 ${action}`
+  const messageLog = `💬 ${message}`
+  const resultLog = `✅ ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
 
   log(dateLog, Color.Cyan)
-  log(`USER: ${userLog}`, Color.White)
+  log(userLog, Color.White)
 
   if (action) log(actionLog, Color.Green)
   if (message) log(messageLog, Color.Red)
@@ -60,8 +69,8 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
 
   systemTgBot.sendMessage(
     config.systemTelegramChatId,
-    `USER: ${userLog} ${action ? `\n🔢${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
-      result ? `\n✅ ${resultLog}` : ""
+    `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
+      result ? `\n ${resultLog}` : ""
     } ${error ? `\n❗️ ${String(error)}` : ""}`
   )
 }
