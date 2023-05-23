@@ -37,7 +37,7 @@ class Discord {
       }
 
       const payload = { role: ChatCompletionRequestMessageRoleEnum.User, content: text }
-      this.context.push(payload)
+      //this.context.push(payload)
 
       const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages: this.context })
       const result = response.data.choices[0].message?.content as string
