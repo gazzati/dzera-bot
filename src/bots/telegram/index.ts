@@ -29,15 +29,9 @@ class Telegram {
     const { from, chat, text } = msg
     if (!from || !text) return
 
-    try {
-      if(this.COMMANDS.includes(text as TelegramCommand)) return this.command(from, chat, text)
+    if(this.COMMANDS.includes(text as TelegramCommand)) return this.command(from, chat, text)
 
-      this.message(from, chat, text)
-
-    } catch (error) {
-      tgLog({ from, message: text, error })
-      this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
-    }
+    this.message(from, chat, text)
     })
   }
 
@@ -73,8 +67,9 @@ class Telegram {
 
   private async message(from: User, chat: Chat, message: string) {
     this.bot.sendChatAction(chat.id, "typing")
-      const messages = await this.getMessages(chat, message)
+    const messages = await this.getMessages(chat, message)
 
+    try {
       const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages })
       const result = response.data.choices[0].message?.content as string
 
@@ -88,6 +83,10 @@ class Telegram {
         last_name: chat.last_name
       })
       entities.Story.save({ chat_id: chat.id, content: message })
+    } catch (error) {
+      tgLog({ from, message, error })
+      this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+    }
   }
 
   private async getMessages (chat: Chat, message: string): Promise<Array<ChatCompletionRequestMessage>> {
