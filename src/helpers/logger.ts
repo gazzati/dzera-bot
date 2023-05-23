@@ -41,11 +41,10 @@ export const getLogDate = (today = new Date()): string => {
 }
 
 const getUserLog = (from: User): string => {
-  const userDetails = from.first_name || from.last_name
-    ? ` (${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})`
-    : ""
+  const userDetails =
+    from.first_name || from.last_name ? ` (${from.first_name || ""}${from.last_name ? ` ${from.last_name}` : ""})` : ""
 
-  return`👨‍💻 @${from.username}${userDetails}`
+  return `👨‍💻 @${from.username}${userDetails}`
 }
 
 export const tgLog = ({ from, action, message, result, error }: LogArgs) => {

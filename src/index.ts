@@ -8,5 +8,5 @@ import config from "@root/config"
 
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: config.gptKey }))
 
-new TelegramBot(openAIApi).start()
-new DiscordBot(openAIApi).start()
+new TelegramBot(openAIApi).process()
+new DiscordBot(openAIApi).process()

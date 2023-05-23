@@ -1,5 +1,5 @@
 import DiscordBot, { Client, GatewayIntentBits } from "discord.js"
-import {OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai"
+import { OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from "openai"
 
 import config from "@root/config"
 
@@ -10,14 +10,14 @@ class Discord {
   private bot: Client
 
   private INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
-  private context = this.initContext()
+  private context: Array<string> = []
 
   constructor(openAIApi: OpenAIApi) {
     this.openAIApi = openAIApi
-    this.bot = new DiscordBot.Client({intents: this.INTENTS})
+    this.bot = new DiscordBot.Client({ intents: this.INTENTS })
   }
 
-  public start() {
+  public process() {
     this.bot.once("ready", () => log("Discord bot is active!"))
     this.bot.login(config.discordToken)
 
@@ -30,25 +30,31 @@ class Discord {
       const command = args.shift()?.toLowerCase()
 
       if (command === "reset") {
-        this.context = this.initContext()
+        this.context = []
 
         message.reply(config.phrases.RESET_MESSAGE)
         return
       }
 
-      const payload = { role: ChatCompletionRequestMessageRoleEnum.User, content: text }
-      this.context.push(payload)
-
-      const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages: this.context })
+      const messages = this.getMessages(text)
+      const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages })
       const result = response.data.choices[0].message?.content as string
 
       message.reply(result)
     })
   }
 
-  private initContext (): Array<ChatCompletionRequestMessage> {
-    return [{ role: ChatCompletionRequestMessageRoleEnum.User, content: config.phrases.INIT_MESSAGE }]
+  private getMessages(text: string): Array<ChatCompletionRequestMessage> {
+    if (this.context.length > config.contextLengthLimit) {
+      this.context.splice(0, this.context.length - config.contextLengthLimit)
+    }
+
+    this.context.push(text)
+
+    return [config.phrases.INIT_MESSAGE, ...this.context].map(message => ({
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: message
+    }))
   }
 }
 export default Discord
-

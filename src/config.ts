@@ -38,6 +38,8 @@ export default {
   psqlUsername: envVars.PSQL_USER,
   psqlPassword: envVars.PSQL_PASSWORD,
 
+  contextLengthLimit: 20,
+
   phrases: {
     INIT_MESSAGE: "Теперь тебя зовут Дзера. Отвечай в женском роде.",
     START_MESSAGE: `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️`,
