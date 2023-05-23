@@ -60,9 +60,9 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
 
   systemTgBot.sendMessage(
     config.systemTelegramChatId,
-    `USER: ${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
-      result ? `\n${resultLog}` : ""
-    } ${error ? `\n${String(error)}` : ""}`
+    `USER: ${userLog} ${action ? `\n🔢${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
+      result ? `\n✅ ${resultLog}` : ""
+    } ${error ? `\n❗️ ${String(error)}` : ""}`
   )
 }
 
