@@ -1,18 +1,19 @@
-import DiscordBot, { Client, GatewayIntentBits } from "discord.js"
+import DiscordBot, { Client } from "discord.js"
 import { OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from "openai"
 
 import config from "@root/config"
 
 import { log } from "@helpers/logger"
+import DiscordBase from "@root/helpers/discord.base"
+import CommandController from "./command-controller"
 
-class Discord {
+class Discord extends DiscordBase{
   private openAIApi: OpenAIApi
   private bot: Client
-
-  private INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
-  private context: Array<string> = []
+  private commandController = new CommandController()
 
   constructor(openAIApi: OpenAIApi) {
+    super()
     this.openAIApi = openAIApi
     this.bot = new DiscordBot.Client({ intents: this.INTENTS })
   }
@@ -23,16 +24,17 @@ class Discord {
 
     this.bot.on("messageCreate", async message => {
       if (message.author.bot) return
-
       const text = message.content
-      const commandBody = text.slice(config.discordPrefix.length)
-      const args = commandBody.split(" ")
-      const command = args.shift()?.toLowerCase()
+      const command = this.getCommand(text)
 
-      if (command === "reset") {
-        this.context = []
+      if (command) {
+        const response = this.commandController.executeCommand(command)
+        if (!response) {
+          message.reply(config.phrases.ERROR_MESSAGE)
+          return
+        }
 
-        message.reply(config.phrases.RESET_MESSAGE)
+        message.reply(response)
         return
       }
 
@@ -42,6 +44,13 @@ class Discord {
 
       message.reply(result)
     })
+  }
+
+  private getCommand(text: string): string | undefined{
+    const commandBody = text.slice(config.discordPrefix.length)
+    const args = commandBody.split(" ")
+    
+    return args.shift()?.toLowerCase()
   }
 
   private getMessages(text: string): Array<ChatCompletionRequestMessage> {
