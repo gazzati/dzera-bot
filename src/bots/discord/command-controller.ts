@@ -1,5 +1,5 @@
 import config from "@root/config";
-import DiscordBase from "@root/helpers/discord.base";
+import DiscordBase from "./discord.base";
 
 class CommandController extends DiscordBase {
 

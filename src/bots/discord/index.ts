@@ -4,7 +4,7 @@ import { OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRo
 import config from "@root/config"
 
 import { log } from "@helpers/logger"
-import DiscordBase from "@root/helpers/discord.base"
+import DiscordBase from "./discord.base"
 import CommandController from "./command-controller"
 
 class Discord extends DiscordBase{
