@@ -8,7 +8,6 @@ import DiscordBase from "./discord.base"
 import CommandController from "./command-controller"
 
 class Discord extends DiscordBase{
-  private openAIApi: OpenAIApi
   private bot: Client
   private commandController = new CommandController()
 
@@ -28,7 +27,7 @@ class Discord extends DiscordBase{
       const command = this.getCommand(text)
 
       if (command) {
-        const response = this.commandController.executeCommand(command)
+        const response = await this.commandController.executeCommand(command, text)
         if (!response) {
           message.reply(config.phrases.ERROR_MESSAGE)
           return
