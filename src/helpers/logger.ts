@@ -7,6 +7,7 @@ interface LogArgs {
   from: User
   action?: string
   message?: string
+  transcript?: string
   result?: string
   error?: any
 }
@@ -47,13 +48,14 @@ const getUserLog = (from: User): string => {
   return `👨‍💻 @${from.username}${userDetails}`
 }
 
-export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
+export const tgLog = ({ from, action, message, transcript, result, error }: LogArgs) => {
   const dateLog = getLogDate()
 
   const userLog = getUserLog(from)
 
   const actionLog = `🔢 ${action}`
   const messageLog = `💬 ${message}`
+  const transcriptLog = `🔉 ${transcript}`
   const resultLog = `✅ ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
 
   log(dateLog, Color.Cyan)
@@ -61,6 +63,7 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
 
   if (action) log(actionLog, Color.Green)
   if (message) log(messageLog, Color.Red)
+  if (transcript) log(transcriptLog, Color.Cyan)
   if (result) log(resultLog, Color.Yellow)
   if (error) console.error(error)
 
@@ -68,7 +71,7 @@ export const tgLog = ({ from, action, message, result, error }: LogArgs) => {
 
   systemTgBot.sendMessage(
     config.systemTelegramChatId,
-    `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
+    `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${transcript ? `\n${transcriptLog}` : ""} ${
       result ? `\n${resultLog}` : ""
     } ${error ? `\n❗️ ${String(error)}` : ""}`
   )
