@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p tsconfig.json && cp .env ./build/.env",
+    "build": "tsc -p tsconfig.json && cp .env ./build/.env && cp google-credentials.json ./build/google-credentials.json",
     "start": "node build/index.js",
     "dev": "ts-node-dev --respawn --transpile-only --quiet src/index.ts",
     "format": "prettier --write \"src/\"",
