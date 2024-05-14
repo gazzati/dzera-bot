@@ -1,10 +1,16 @@
+import fs from "fs"
+
+import speech, { protos, SpeechClient } from "@google-cloud/speech"
 import TelegramBot, { User, Chat } from "node-telegram-bot-api"
 import { OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from "openai"
 
 import config from "@root/config"
 
+import {convertToWav} from '../../helpers/ffmpeg';
 import { entities } from "@database/data-source"
 import { tgLog } from "@helpers/logger"
+
+type IRecognitionConfig = protos.google.cloud.speech.v1.IRecognitionConfig
 
 enum TelegramCommand {
   Start = "/start",
@@ -15,6 +21,7 @@ enum TelegramCommand {
 class Telegram {
   private bot: TelegramBot
   private openAIApi: OpenAIApi
+  private speechClient: SpeechClient
 
   private COMMANDS = [TelegramCommand.Start, TelegramCommand.Reset, TelegramCommand.Help]
   private stories: { [chatId: number]: Array<string> } = {}
@@ -22,9 +29,13 @@ class Telegram {
   constructor(openAIApi: OpenAIApi) {
     this.openAIApi = openAIApi
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
+
+    this.speechClient = new speech.SpeechClient({ keyFilename: "./google-credentials.json" })
   }
 
   public process() {
+    this.setupFolder()
+
     this.bot.on("message", msg => {
       const { from, chat, text } = msg
       if (!from || !text) return
@@ -32,6 +43,32 @@ class Telegram {
       if (this.COMMANDS.includes(text as TelegramCommand)) return this.command(from, chat, text)
 
       this.message(from, chat, text)
+    })
+
+    this.bot.on("voice", async msg => {
+      try {
+        const { from, chat, voice } = msg
+        if (!from || !voice) return
+
+        const filePath = await this.bot.downloadFile(voice.file_id, "files")
+        const newFile = await convertToWav(filePath)
+        if(!newFile) {
+          tgLog({ from, error: "Converting file Error" })
+          this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+        }
+
+        const transcript = await this.recognizeAudio(from, newFile)
+        if(!transcript) {
+          tgLog({ from, error: "File transcription Error" })
+          return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+        }
+
+         tgLog({ from, transcript })
+
+         this.message(from, chat, transcript)
+      } catch (error) {
+        console.error("Error:", error)
+      }
     })
   }
 
@@ -115,6 +152,48 @@ class Telegram {
 
   private help(chat: Chat) {
     this.bot.sendMessage(chat.id, config.phrases.HELP_MESSAGE)
+  }
+
+  private setupFolder() {
+    return new Promise(resolve => {
+      fs.rmdir("files", { recursive: true }, () => {
+        fs.mkdirSync("files")
+        resolve(1)
+      })
+    })
+  }
+
+  private async recognizeAudio(from: User, audioPath: string): Promise<string | null> {
+     // Read the binary audio data from the specified file.
+     const file = fs.readFileSync(audioPath)
+     const audioBytes = file.toString("base64")
+
+     const audio = {
+       content: audioBytes
+     }
+
+     const config: IRecognitionConfig = {
+       encoding: "LINEAR16",
+       sampleRateHertz: 48000,
+       languageCode: "ru-RU",
+       model: "default",
+       audioChannelCount: 1,
+       enableWordConfidence: true,
+       enableWordTimeOffsets: true
+     }
+
+      // Use the SpeechClient to recognize the audio with the specified config.
+      const data = await this.speechClient.recognize({ audio, config })
+
+      const { results } = data[0]
+      if(!results?.length) return null
+
+      const {alternatives} = results[0]
+      if(!alternatives?.length) return null
+
+      const { transcript } = alternatives[0]
+      return transcript || null
+
   }
 }
 

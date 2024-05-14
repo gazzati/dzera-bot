@@ -29,3 +29,6 @@ jspm_packages/
 # build files
 dist/
 build/
+files/
+
+google-credentials.json
