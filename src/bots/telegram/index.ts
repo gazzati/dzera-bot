@@ -49,7 +49,7 @@ class Telegram {
       try {
         const { from, chat, voice } = msg
         if (!from || !voice) return
-        if(voice.duration > 20) return this.bot.sendMessage(chat.id, config.phrases.LONG_AUDIO_DURATION)
+        if(voice.duration > 10) return this.bot.sendMessage(chat.id, config.phrases.LONG_AUDIO_DURATION)
 
         const filePath = await this.bot.downloadFile(voice.file_id, "files")
         const newFile = await convertToWav(filePath)
