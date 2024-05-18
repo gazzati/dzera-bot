@@ -1,16 +1,15 @@
 import fs from "fs"
 
-import speech, { protos, SpeechClient } from "@google-cloud/speech"
-import TelegramBot, { User, Chat } from "node-telegram-bot-api"
-import { OpenAIApi, ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from "openai"
+import TelegramBot, { User, Chat, Voice, PhotoSize } from "node-telegram-bot-api"
 
 import config from "@root/config"
 
-import {convertToWav} from '../../helpers/ffmpeg';
 import { entities } from "@database/data-source"
 import { tgLog } from "@helpers/logger"
+import { convertToWav } from "@services/ffmpeg"
+import { recognizeAudio } from "@services/recognizer"
 
-type IRecognitionConfig = protos.google.cloud.speech.v1.IRecognitionConfig
+import type OpenAI from "openai"
 
 enum TelegramCommand {
   Start = "/start",
@@ -20,56 +19,36 @@ enum TelegramCommand {
 
 class Telegram {
   private bot: TelegramBot
-  private openAIApi: OpenAIApi
-  private speechClient: SpeechClient
 
   private COMMANDS = [TelegramCommand.Start, TelegramCommand.Reset, TelegramCommand.Help]
   private stories: { [chatId: number]: Array<string> } = {}
 
-  constructor(openAIApi: OpenAIApi) {
-    this.openAIApi = openAIApi
+  constructor(private openAI: OpenAI) {
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
-
-    this.speechClient = new speech.SpeechClient({ keyFilename: "./google-credentials.json" })
   }
 
   public process() {
-    this.setupFolder()
-
     this.bot.on("message", msg => {
       const { from, chat, text } = msg
       if (!from || !text) return
 
-      if (this.COMMANDS.includes(text as TelegramCommand)) return this.command(from, chat, text)
+      if (this.COMMANDS.includes(text as TelegramCommand)) return this.commands(from, chat, text)
 
       this.message(from, chat, text)
     })
 
-    this.bot.on("voice", async msg => {
-      try {
-        const { from, chat, voice } = msg
-        if (!from || !voice) return
-        if(voice.duration > 10) return this.bot.sendMessage(chat.id, config.phrases.LONG_AUDIO_DURATION)
+    this.bot.on("voice", msg => {
+      const { from, chat, voice } = msg
+      if (!from || !voice) return
 
-        const filePath = await this.bot.downloadFile(voice.file_id, "files")
-        const newFile = await convertToWav(filePath)
-        if(!newFile) {
-          tgLog({ from, error: "Converting file Error" })
-          this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
-        }
+      this.voice(from, chat, voice)
+    })
 
-        const transcript = await this.recognizeAudio(from, newFile)
-        if(!transcript) {
-          tgLog({ from, error: "File transcription Error" })
-          return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
-        }
+    this.bot.on("photo", msg => {
+      const { from, chat, photo } = msg
+      if (!from || !photo) return
 
-         tgLog({ from, transcript })
-
-         this.message(from, chat, transcript)
-      } catch (error) {
-        console.error("Error:", error)
-      }
+      this.photo(from, chat, photo)
     })
   }
 
@@ -78,12 +57,14 @@ class Telegram {
     const messages = await this.getMessages(chat, message)
 
     try {
-      const response = await this.openAIApi.createChatCompletion({ model: config.gptModel, messages })
-      const result = response.data.choices[0].message?.content as string
+      const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
+      const result = response.choices[0].message?.content
+      if (!result) return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+
+      this.bot.sendMessage(chat.id, result)
 
       tgLog({ from, message, result })
 
-      this.bot.sendMessage(chat.id, result)
       entities.Chat.save({
         // TODO: remove later
         id: chat.id,
@@ -91,6 +72,7 @@ class Telegram {
         first_name: chat.first_name,
         last_name: chat.last_name
       })
+
       entities.Story.save({ chat_id: chat.id, content: message })
     } catch (error) {
       tgLog({ from, message, error })
@@ -98,9 +80,10 @@ class Telegram {
     }
   }
 
-  private async getMessages(chat: Chat, message: string): Promise<Array<ChatCompletionRequestMessage>> {
+  private async getMessages(chat: Chat, message: string): Promise<Array<OpenAI.ChatCompletionUserMessageParam>> {
     if (!this.stories[chat.id]) {
       const storiesDB = await entities.Story.find({
+        // TODO: filter old messages
         where: { chat_id: chat.id },
         select: ["content"]
       })
@@ -115,12 +98,85 @@ class Telegram {
     this.stories[chat.id].push(message)
 
     return [config.phrases.INIT_MESSAGE, ...this.stories[chat.id]].map(message => ({
-      role: ChatCompletionRequestMessageRoleEnum.User,
+      role: "user",
       content: message
     }))
   }
 
-  private command(from: User, chat: Chat, action: string) {
+  private async voice(from: User, chat: Chat, voice: Voice) {
+    if (voice.duration > 10) return this.bot.sendMessage(chat.id, config.phrases.LONG_AUDIO_DURATION)
+
+    try {
+      const filePath = await this.bot.downloadFile(voice.file_id, config.filesPath)
+      const newFile = await convertToWav(filePath)
+      if (!newFile) {
+        tgLog({ from, error: "Converting file Error" })
+        this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+      }
+
+      const transcript = await recognizeAudio(newFile)
+      if (!transcript) {
+        tgLog({ from, error: "File transcription Error" })
+        return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+      }
+
+      tgLog({ from, transcript })
+
+      this.message(from, chat, transcript)
+    } catch (error) {
+      tgLog({ from, error })
+      this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+    }
+  }
+
+  private async photo(from: User, chat: Chat, photo: Array<PhotoSize>) {
+    const photoFile = photo.shift() // shift for low quality, pop for high
+    if (!photoFile) return
+
+    try {
+      const filePath = await this.bot.downloadFile(photoFile.file_id, config.filesPath)
+
+      const file = fs.readFileSync(filePath)
+      const image = Buffer.from(file).toString("base64")
+      if (!image) {
+        tgLog({ from, isVision: true, error: "Image error" })
+        this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+        return
+      }
+
+      const messages: Array<OpenAI.ChatCompletionUserMessageParam> = [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Что на изображении?" },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpg;base64,${image}`
+              }
+            }
+          ]
+        }
+      ]
+      const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
+
+      const result = response?.choices[0]?.message?.content
+      if (!result) {
+        tgLog({ from, isVision: true, error: "Result error" })
+        this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+        return
+      }
+
+      this.bot.sendMessage(chat.id, result)
+
+      tgLog({ from, result, isVision: true })
+    } catch (error) {
+      tgLog({ from, error, isVision: true })
+      this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+    }
+  }
+
+  private commands(from: User, chat: Chat, action: string) {
     tgLog({ from, action })
 
     switch (action) {
@@ -153,48 +209,6 @@ class Telegram {
 
   private help(chat: Chat) {
     this.bot.sendMessage(chat.id, config.phrases.HELP_MESSAGE)
-  }
-
-  private setupFolder() {
-    return new Promise(resolve => {
-      fs.rmdir("files", { recursive: true }, () => {
-        fs.mkdirSync("files")
-        resolve(1)
-      })
-    })
-  }
-
-  private async recognizeAudio(from: User, audioPath: string): Promise<string | null> {
-     // Read the binary audio data from the specified file.
-     const file = fs.readFileSync(audioPath)
-     const audioBytes = file.toString("base64")
-
-     const audio = {
-       content: audioBytes
-     }
-
-     const config: IRecognitionConfig = {
-       encoding: "LINEAR16",
-       sampleRateHertz: 48000,
-       languageCode: "ru-RU",
-       model: "default",
-       audioChannelCount: 1,
-       enableWordConfidence: true,
-       enableWordTimeOffsets: true
-     }
-
-      // Use the SpeechClient to recognize the audio with the specified config.
-      const data = await this.speechClient.recognize({ audio, config })
-
-      const { results } = data[0]
-      if(!results?.length) return null
-
-      const {alternatives} = results[0]
-      if(!alternatives?.length) return null
-
-      const { transcript } = alternatives[0]
-      return transcript || null
-
   }
 }
 

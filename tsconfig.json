@@ -19,7 +19,8 @@
       "@root/*": ["./*"],
       "@database/*": ["./database/*"],
       "@bots/*": ["./bots/*"],
-      "@helpers/*": ["./helpers/*"]
+      "@helpers/*": ["./helpers/*"],
+      "@services/*": ["./services/*"]
     },
     "typeRoots": ["./node_modules/@types"]
   },
