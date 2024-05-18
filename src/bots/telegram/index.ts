@@ -13,6 +13,7 @@ import type OpenAI from "openai"
 
 enum TelegramCommand {
   Start = "/start",
+  Photo = "/photo",
   Reset = "/reset",
   Help = "/help"
 }
@@ -20,7 +21,7 @@ enum TelegramCommand {
 class Telegram {
   private bot: TelegramBot
 
-  private COMMANDS = [TelegramCommand.Start, TelegramCommand.Reset, TelegramCommand.Help]
+  private COMMANDS = [TelegramCommand.Start, TelegramCommand.Photo, TelegramCommand.Reset, TelegramCommand.Help]
   private stories: { [chatId: number]: Array<string> } = {}
 
   constructor(private openAI: OpenAI) {
@@ -180,16 +181,18 @@ class Telegram {
     tgLog({ from, action })
 
     switch (action) {
-      case "/start":
-        return this.start(chat)
-      case "/reset":
-        return this.reset(chat)
-      case "/help":
-        return this.help(chat)
+      case TelegramCommand.Start:
+        return this.startCommand(chat)
+      case TelegramCommand.Photo:
+        return this.photoCommand(chat)
+      case TelegramCommand.Reset:
+        return this.resetCommand(chat)
+      case TelegramCommand.Help:
+        return this.helpCommand(chat)
     }
   }
 
-  private start(chat: Chat) {
+  private startCommand(chat: Chat) {
     this.bot.sendMessage(chat.id, config.phrases.START_MESSAGE)
 
     entities.Chat.save({
@@ -200,14 +203,18 @@ class Telegram {
     })
   }
 
-  private reset(chat: Chat) {
+  private photoCommand(chat: Chat) {
+    this.bot.sendMessage(chat.id, config.phrases.PHOTO_MESSAGE)
+  }
+
+  private resetCommand(chat: Chat) {
     this.bot.sendMessage(chat.id, config.phrases.RESET_MESSAGE)
 
     this.stories[chat.id] = []
     entities.Story.delete({ chat_id: chat.id })
   }
 
-  private help(chat: Chat) {
+  private helpCommand(chat: Chat) {
     this.bot.sendMessage(chat.id, config.phrases.HELP_MESSAGE)
   }
 }
