@@ -1,6 +1,6 @@
 import "./aliases"
 
-import DiscordBot from "@bots/discord"
+// import DiscordBot from "@bots/discord"
 import { SpeechClient } from "@google-cloud/speech"
 import OpenAI from "openai"
 
@@ -15,4 +15,4 @@ setupFolder()
 const openAI = new OpenAI({ apiKey: config.gptKey })
 
 new TelegramBot(openAI).process()
-new DiscordBot(openAI).process()
+// new DiscordBot(openAI).process()
