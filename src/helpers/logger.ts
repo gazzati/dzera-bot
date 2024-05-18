@@ -9,6 +9,7 @@ interface LogArgs {
   message?: string
   transcript?: string
   result?: string
+  tokens?: number
   error?: any
   isVision?: boolean
 }
@@ -49,7 +50,7 @@ const getUserLog = (from: User): string => {
   return `👨‍💻 @${from.username}${userDetails}`
 }
 
-export const tgLog = ({ from, action, message, transcript, result, error, isVision }: LogArgs) => {
+export const tgLog = ({ from, action, message, transcript, result, tokens, error, isVision }: LogArgs) => {
   const dateLog = getLogDate()
 
   const userLog = getUserLog(from)
@@ -57,8 +58,9 @@ export const tgLog = ({ from, action, message, transcript, result, error, isVisi
   const actionLog = `🔢 ${action}`
   const messageLog = `💬 ${message}`
   const transcriptLog = `🔉 ${transcript}`
+  const tokensLog = `💰 ${tokens} tokens`
   const visionLog = `🏞️ Vision`
-  const resultLog = `✅ ${result && result.length > 30 ? `${result?.slice(0, 30)}...` : result}`
+  const resultLog = `✅ ${result && result.length > 50 ? `${result?.slice(0, 50)}...` : result}`
 
   log(dateLog, Color.Cyan)
   log(userLog, Color.White)
@@ -67,6 +69,7 @@ export const tgLog = ({ from, action, message, transcript, result, error, isVisi
   if (message) log(messageLog, Color.Red)
   if (transcript) log(transcriptLog, Color.Cyan)
   if (result) log(resultLog, Color.Yellow)
+  if (tokens) log(tokensLog, Color.Green)
   if (isVision) log(visionLog, Color.White)
   if (error) console.error(error)
 
@@ -76,7 +79,9 @@ export const tgLog = ({ from, action, message, transcript, result, error, isVisi
     config.systemTelegramChatId,
     `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
       transcript ? `\n${transcriptLog}` : ""
-    } ${isVision ? `\n${visionLog}` : ""} ${result ? `\n${resultLog}` : ""} ${error ? `\n❗️ ${String(error)}` : ""}`
+    } ${isVision ? `\n${visionLog}` : ""} ${result ? `\n${resultLog}` : ""} ${tokens ? `\n${tokensLog}` : ""} ${
+      error ? `\n❗️ ${String(error)}` : ""
+    }`
   )
 }
 

@@ -14,6 +14,9 @@ export class Chat {
   @Column({ nullable: true })
   last_name: string
 
+  @Column({ default: 0 })
+  count: number
+
   @Column()
   @CreateDateColumn()
   created_at: Date

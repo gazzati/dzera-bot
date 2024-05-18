@@ -13,20 +13,15 @@ systemTgBot.onText(/\/chats/, async msg => {
 
   const chatsResponse = await entities.Chat.find()
 
-  let result = ""
-
-  for (const item of chatsResponse) {
-    //TODO: remake to JOIN
-    const count = await entities.Story.count({ where: { chat_id: item.id } })
-
+  const result = chatsResponse.reduce((acc, item) => {
     const user = `${item.username}(${item.first_name || ""}${item.last_name ? ` ${item.last_name}` : ""})`
     const createdDate = getLogDate(item.created_at)
     const updatedDate = getLogDate(item.updated_at)
 
-    const resultItem = `#${item.id} \nUSER: ${user} \nCREATED: ${createdDate} \nUPDATED: ${updatedDate} \nMESSAGES COUNT: ${count} \n========== \n\n`
+    const resultItem = `#${item.id} \nUSER: ${user} \nCREATED: ${createdDate} \nUPDATED: ${updatedDate} \nMESSAGES COUNT: ${item.count} \n========== \n\n`
 
-    result += resultItem
-  }
+    return acc + resultItem
+  }, "")
 
   systemTgBot.sendMessage(chat.id, result)
 })
