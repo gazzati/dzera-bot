@@ -23,5 +23,7 @@ systemTgBot.onText(/\/chats/, async msg => {
     return acc + resultItem
   }, "")
 
+  if(!result) systemTgBot.sendMessage(chat.id, "---")
+
   systemTgBot.sendMessage(chat.id, result)
 })
