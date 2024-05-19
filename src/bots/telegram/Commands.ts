@@ -4,7 +4,15 @@ import config from "@root/config"
 import { entities } from "@root/database/data-source"
 import { tgLog } from "@root/helpers/logger"
 
-import { TelegramCommand } from "./interfaces"
+import { TelegramCommand } from "@interfaces/telegram"
+
+export const COMMANDS: Array<string> = [
+  TelegramCommand.Start,
+  TelegramCommand.GenerateImage,
+  TelegramCommand.AnalyzePhoto,
+  TelegramCommand.Reset,
+  TelegramCommand.Help
+]
 
 class Commands {
   constructor(

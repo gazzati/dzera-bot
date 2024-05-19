@@ -12,17 +12,8 @@ import { recognizeAudio } from "@services/recognizer"
 
 import type OpenAI from "openai"
 
-import Commands from "./Commands"
+import Commands, { COMMANDS } from "./Commands"
 import Storage from "./Storage"
-import { TelegramCommand } from "./interfaces"
-
-const COMMANDS = [
-  TelegramCommand.Start,
-  TelegramCommand.GenerateImage,
-  TelegramCommand.AnalyzePhoto,
-  TelegramCommand.Reset,
-  TelegramCommand.Help
-]
 
 class Telegram extends Storage {
   private bot: TelegramBot
@@ -45,7 +36,7 @@ class Telegram extends Storage {
 
       this.initContext(chat)
 
-      if (COMMANDS.includes(text as TelegramCommand)) return this.commands.call(from, chat, text)
+      if (COMMANDS.includes(text)) return this.commands.call(from, chat, text)
 
       if (this.getChatWaitingImage(chat)) return this.generateImage(from, chat, text)
 
@@ -168,10 +159,10 @@ class Telegram extends Storage {
 
     try {
       const response = await this.openAI.images.generate({
-        model: "dall-e-2",
+        model: config.dalleModel,
         prompt: text,
         n: 1,
-        size: "256x256"
+        size: config.dalleSize
       })
 
       const result = response?.data[0]?.url

@@ -18,6 +18,7 @@
     "paths": {
       "@root/*": ["./*"],
       "@database/*": ["./database/*"],
+      "@interfaces/*": ["./interfaces/*"],
       "@bots/*": ["./bots/*"],
       "@helpers/*": ["./helpers/*"],
       "@services/*": ["./services/*"]

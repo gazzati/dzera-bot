@@ -1,6 +1,8 @@
 import dotenv from "dotenv"
 import Joi from "joi"
 
+import type {DalleSize} from '@interfaces/openai';
+
 dotenv.config()
 
 const envVarsSchema = Joi.object({
@@ -26,6 +28,10 @@ if (error) new Error(`Config validation error: ${error.message}`)
 export default {
   gptKey: envVars.GPT_KEY,
   gptModel: envVars.GPT_MODEL,
+
+  dalleModel: envVars.DALLE_MODEL,
+  dalleSize: "256x256" as DalleSize,
+
   telegramToken: envVars.TELEGRAM_TOKEN,
   systemTelegramToken: envVars.SYSTEM_TELEGRAM_TOKEN,
   systemTelegramChatId: Number(envVars.SYSTEM_TELEGRAM_CHAT_ID),
@@ -38,7 +44,9 @@ export default {
   psqlUsername: envVars.PSQL_USER,
   psqlPassword: envVars.PSQL_PASSWORD,
 
-  contextLengthLimit: 10,
+  contextLengthLimit: 5,
+  contextTTLMin: 5,
+  maxResultLengthToSave: 500,
 
   filesPath: "files",
   audioFormat: "wav",
