@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 
-import { Role } from "../bots/telegram/interfaces"
+import { Role } from "@interfaces/openai"
 
 export const visionTemplate = (imageBase64: string): Array<OpenAI.ChatCompletionUserMessageParam> => {
   return [

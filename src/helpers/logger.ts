@@ -51,7 +51,17 @@ const getUserLog = (from: User): string => {
   return `👨‍💻 @${from.username}${userDetails}`
 }
 
-export const tgLog = ({ from, action, message, transcript, result, tokens, error, isVision, isGenerateImage }: LogArgs) => {
+export const tgLog = ({
+  from,
+  action,
+  message,
+  transcript,
+  result,
+  tokens,
+  error,
+  isVision,
+  isGenerateImage
+}: LogArgs) => {
   const dateLog = getLogDate()
 
   const userLog = getUserLog(from)
@@ -82,9 +92,9 @@ export const tgLog = ({ from, action, message, transcript, result, tokens, error
     config.systemTelegramChatId,
     `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
       transcript ? `\n${transcriptLog}` : ""
-    } ${isVision ? `\n${visionLog}` : ""} ${isGenerateImage ? `\n${generateImageLog}` : ""} ${result ? `\n${resultLog}` : ""} ${tokens ? `\n${tokensLog}` : ""} ${
-      error ? `\n❗️ ${String(error)}` : ""
-    }`
+    } ${isVision ? `\n${visionLog}` : ""} ${isGenerateImage ? `\n${generateImageLog}` : ""} ${
+      result ? `\n${resultLog}` : ""
+    } ${tokens ? `\n${tokensLog}` : ""} ${error ? `\n❗️ ${String(error)}` : ""}`
   )
 }
 
