@@ -21,7 +21,7 @@ jobs:
                 KEY: ${{ secrets.PRIVATE_KEY }}
                 PORT: 22
                 script: |
-                    cd /home/tim/dzera-bot
+                    cd /home/dzera-bot
                     git checkout master
                     git pull
                     git status
