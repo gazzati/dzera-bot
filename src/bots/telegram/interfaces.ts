@@ -2,7 +2,8 @@
 
 export enum TelegramCommand {
   Start = "/start",
-  Photo = "/photo",
+  GenerateImage = "/generate_image",
+  AnalyzePhoto = "/analyze_photo",
   Reset = "/reset",
   Help = "/help"
 }
@@ -12,8 +13,13 @@ export enum Role {
   Assistant = "assistant"
 }
 
-export interface IContext {
+export interface Context {
   role: Role
   content: string // | Array<OpenAI.ChatCompletionContentPart>
   createdAt: Date
+}
+
+export interface CharStorage {
+  context: Array<Context>
+  waitingImage?: boolean
 }

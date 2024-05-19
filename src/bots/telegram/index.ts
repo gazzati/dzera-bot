@@ -12,17 +12,30 @@ import { recognizeAudio } from "@services/recognizer"
 
 import type OpenAI from "openai"
 
-import Context from "./Context"
+import Commands from "./Commands"
+import Storage from "./Storage"
 import { TelegramCommand } from "./interfaces"
 
-const COMMANDS = [TelegramCommand.Start, TelegramCommand.Photo, TelegramCommand.Reset, TelegramCommand.Help]
+const COMMANDS = [
+  TelegramCommand.Start,
+  TelegramCommand.GenerateImage,
+  TelegramCommand.AnalyzePhoto,
+  TelegramCommand.Reset,
+  TelegramCommand.Help
+]
 
-class Telegram extends Context {
+class Telegram extends Storage {
   private bot: TelegramBot
+  private commands: Commands
 
   constructor(private openAI: OpenAI) {
     super()
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
+    this.commands = new Commands(
+      (chat: Chat, message: string) => this.sendMessage(chat, message),
+      (chat: Chat) => this.clearContext(chat),
+      (chat: Chat) => this.setChatWaitingImage(chat, true)
+    )
   }
 
   public process() {
@@ -30,7 +43,11 @@ class Telegram extends Context {
       const { from, chat, text } = msg
       if (!from || !text) return
 
-      if (COMMANDS.includes(text as TelegramCommand)) return this.commands(from, chat, text)
+      this.initContext(chat)
+
+      if (COMMANDS.includes(text as TelegramCommand)) return this.commands.call(from, chat, text)
+
+      if (this.getChatWaitingImage(chat)) return this.generateImage(from, chat, text)
 
       this.message(from, chat, text)
     })
@@ -62,21 +79,21 @@ class Telegram extends Context {
 
       const tokens = response.usage?.total_tokens || 0
       const result = response.choices[0].message?.content
-      if (!result) return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+      if (!result) return this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
 
-      this.bot.sendMessage(chat.id, result)
+      this.sendMessage(chat, result)
 
       tgLog({ from, message, result, tokens })
 
       this.saveResult(chat, result)
     } catch (error) {
       tgLog({ from, message, error })
-      this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+      this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
     }
   }
 
   private async voice(from: User, chat: Chat, voice: Voice) {
-    if (voice.duration > 10) return this.bot.sendMessage(chat.id, config.phrases.LONG_AUDIO_DURATION)
+    if (voice.duration > 10) return this.sendMessage(chat, config.phrases.LONG_AUDIO_DURATION)
 
     this.bot.sendChatAction(chat.id, "typing")
 
@@ -85,13 +102,13 @@ class Telegram extends Context {
       const newFile = await convertToWav(filePath)
       if (!newFile) {
         tgLog({ from, error: "Converting file Error" })
-        this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+        this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
       }
 
       const transcript = await recognizeAudio(newFile)
       if (!transcript) {
         tgLog({ from, error: "File transcription Error" })
-        return this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+        return this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
       }
 
       tgLog({ from, transcript })
@@ -99,7 +116,7 @@ class Telegram extends Context {
       this.message(from, chat, transcript)
     } catch (error) {
       tgLog({ from, error })
-      this.bot.sendMessage(chat.id, config.phrases.ERROR_MESSAGE)
+      this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
     }
   }
 
@@ -116,7 +133,7 @@ class Telegram extends Context {
       const image = Buffer.from(file).toString("base64")
       if (!image) {
         tgLog({ from, isVision: true, error: "Image error" })
-        this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+        this.sendMessage(chat, config.phrases.ERROR_VISION)
         return
       }
 
@@ -130,18 +147,48 @@ class Telegram extends Context {
       const result = response?.choices[0]?.message?.content
       if (!result) {
         tgLog({ from, isVision: true, error: "Result error" })
-        this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+        this.sendMessage(chat, config.phrases.ERROR_VISION)
         return
       }
 
       // TODO: add context for vision
 
-      this.bot.sendMessage(chat.id, result)
+      this.sendMessage(chat, result)
 
       tgLog({ from, result, tokens, isVision: true })
     } catch (error) {
       tgLog({ from, error, isVision: true })
-      this.bot.sendMessage(chat.id, config.phrases.ERROR_VISION)
+      this.sendMessage(chat, config.phrases.ERROR_VISION)
+    }
+  }
+
+  private async generateImage(from: User, chat: Chat, text: string) {
+    this.bot.sendChatAction(chat.id, "upload_photo")
+    this.setChatWaitingImage(chat, false)
+
+    try {
+      const response = await this.openAI.images.generate({
+        model: "dall-e-2",
+        prompt: text,
+        n: 1,
+        size: "256x256"
+      })
+
+      const result = response?.data[0]?.url
+      if(!result) {
+        tgLog({ from, isGenerateImage: true, error: "Result error" })
+        this.sendMessage(chat, config.phrases.ERROR_VISION)
+        return
+      }
+
+      this.bot.sendPhoto(chat.id, result)
+
+      tgLog({ from, message: text, result, isGenerateImage: true })
+
+      this.clearContext(chat)
+    } catch (error) {
+      tgLog({ from, isGenerateImage: true, error })
+      this.sendMessage(chat, config.phrases.ERROR_GENERATE_IMAGE)
     }
   }
 
@@ -162,44 +209,21 @@ class Telegram extends Context {
     await entities.Chat.save(chatData)
   }
 
-  private commands(from: User, chat: Chat, action: string) {
-    tgLog({ from, action })
+  private sendMessage(chat: Chat, message: string) {
+    this.bot.sendMessage(chat.id, message, {
+      parse_mode: "Markdown"
+      // reply_markup: {
+      //   keyboard: [
+      //     [{text: 'test 1'}],
+      //     [{text: 'test 2'}],
+      //     [{text: 'test 3'}],
 
-    switch (action) {
-      case TelegramCommand.Start:
-        return this.startCommand(chat)
-      case TelegramCommand.Photo:
-        return this.photoCommand(chat)
-      case TelegramCommand.Reset:
-        return this.resetCommand(chat)
-      case TelegramCommand.Help:
-        return this.helpCommand(chat)
-    }
-  }
-
-  private startCommand(chat: Chat) {
-    this.bot.sendMessage(chat.id, config.phrases.START_MESSAGE)
-
-    entities.Chat.save({
-      id: chat.id,
-      username: chat.username,
-      first_name: chat.first_name,
-      last_name: chat.last_name
+      //   ],
+      //   is_persistent: true,
+      //   remove_keyboard: false,
+      //   one_time_keyboard: false
+      // }
     })
-  }
-
-  private photoCommand(chat: Chat) {
-    this.bot.sendMessage(chat.id, config.phrases.PHOTO_MESSAGE)
-  }
-
-  private resetCommand(chat: Chat) {
-    this.bot.sendMessage(chat.id, config.phrases.RESET_MESSAGE)
-
-    this.clearContext(chat)
-  }
-
-  private helpCommand(chat: Chat) {
-    this.bot.sendMessage(chat.id, config.phrases.HELP_MESSAGE)
   }
 }
 
