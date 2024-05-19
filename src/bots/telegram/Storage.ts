@@ -16,7 +16,9 @@ class Storage {
       this.storage[chat.id].context.splice(0, this.storage[chat.id].context.length - config.contextLengthLimit)
     }
 
-    this.storage[chat.id].context = this.storage[chat.id].context.filter(({ createdAt }) => this.dateDiffMins(createdAt) < config.contextTTLMin)
+    this.storage[chat.id].context = this.storage[chat.id].context.filter(
+      ({ createdAt }) => this.dateDiffMins(createdAt) < config.contextTTLMin
+    )
 
     const messages = [
       {
@@ -30,7 +32,7 @@ class Storage {
   }
 
   protected saveQuery(chat: Chat, query: string) {
-    if (!this.storage[chat.id]?.context) this.storage[chat.id] = {context: []}
+    if (!this.storage[chat.id]?.context) this.storage[chat.id] = { context: [] }
 
     this.storage[chat.id].context.push({
       role: Role.User,
@@ -40,11 +42,11 @@ class Storage {
   }
 
   protected saveResult(chat: Chat, result: string) {
-    if (!this.storage[chat.id]?.context) this.storage[chat.id] = {context: []}
+    if (!this.storage[chat.id]?.context) this.storage[chat.id] = { context: [] }
 
-    if(result.length > config.maxResultLengthToSave) return
+    if (result.length > config.maxResultLengthToSave) return
 
-      this.storage[chat.id].context.push({
+    this.storage[chat.id].context.push({
       role: Role.Assistant,
       content: result,
       createdAt: new Date()
@@ -52,11 +54,11 @@ class Storage {
   }
 
   protected clearContext(chat: Chat) {
-    if(this.storage[chat.id]) this.storage[chat.id].context = []
+    if (this.storage[chat.id]) this.storage[chat.id].context = []
   }
 
   protected initContext(chat: Chat) {
-    if(!this.storage[chat.id]) this.storage[chat.id] = {context: []}
+    if (!this.storage[chat.id]) this.storage[chat.id] = { context: [] }
   }
 
   protected setChatWaitingImage(chat: Chat, state: boolean) {

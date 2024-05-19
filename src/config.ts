@@ -1,7 +1,7 @@
 import dotenv from "dotenv"
 import Joi from "joi"
 
-import type {DalleSize} from '@interfaces/openai';
+import type { DalleSize } from "@interfaces/openai"
 
 dotenv.config()
 

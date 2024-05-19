@@ -1,5 +1,5 @@
 // import type OpenAI from "openai"
-import {Role} from "./openai"
+import { Role } from "./openai"
 
 export interface Context {
   role: Role

@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 
-import { Role } from "../interfaces/storage"
+import { Role } from "@interfaces/openai"
 
 export const visionTemplate = (imageBase64: string): Array<OpenAI.ChatCompletionUserMessageParam> => {
   return [

@@ -166,7 +166,7 @@ class Telegram extends Storage {
       })
 
       const result = response?.data[0]?.url
-      if(!result) {
+      if (!result) {
         tgLog({ from, isGenerateImage: true, error: "Result error" })
         this.sendMessage(chat, config.phrases.ERROR_VISION)
         return
