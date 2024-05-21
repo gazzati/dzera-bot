@@ -184,10 +184,10 @@ class Telegram extends Storage {
   }
 
   private async createOrUpdateChat(chat: Chat) {
-    const chatData = await entities.Chat.findOneBy({ id: chat.id })
+    const chatData = await entities.Chat.findOneBy({ id: String(chat.id) })
     if (!chatData) {
       entities.Chat.save({
-        id: chat.id,
+        id: String(chat.id),
         username: chat.username,
         first_name: chat.first_name,
         last_name: chat.last_name

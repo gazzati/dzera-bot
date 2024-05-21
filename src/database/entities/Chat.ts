@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn, CreateDateColumn, UpdateDateColumn } fro
 @Entity({ name: "chats" })
 export class Chat {
   @PrimaryColumn()
-  id: number
+  id: string
 
   @Column({ nullable: true })
   username: string
