@@ -42,7 +42,7 @@ class Commands {
     this.sendMessage(chat, config.phrases.START_MESSAGE)
 
     entities.Chat.save({
-      id: chat.id,
+      id: String(chat.id),
       username: chat.username,
       first_name: chat.first_name,
       last_name: chat.last_name
