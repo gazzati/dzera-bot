@@ -19,7 +19,9 @@ const envVarsSchema = Joi.object({
   PSQL_HOST: Joi.string().default("localhost").description("Database Host"),
   PSQL_DATABASE: Joi.string().default("database").description("Database Name"),
   PSQL_USER: Joi.string().default("root").description("Database User"),
-  PSQL_PASSWORD: Joi.string().allow("").default("root").description("Database Password")
+  PSQL_PASSWORD: Joi.string().allow("").default("root").description("Database Password"),
+
+  REDIS_HOST: Joi.string().default("localhost").description("Redis host")
 })
 
 const { error, value: envVars } = envVarsSchema.validate(process.env)
@@ -44,9 +46,12 @@ export default {
   psqlUsername: envVars.PSQL_USER,
   psqlPassword: envVars.PSQL_PASSWORD,
 
+  redisHost: envVars.REDIS_HOST,
+
   contextLengthLimit: 5,
   contextTTLMin: 5,
   maxResultLengthToSave: 500,
+  maxTokensPerDay: 30_000,
 
   filesPath: "files",
   audioFormat: "wav",
@@ -60,6 +65,7 @@ export default {
     ANALYZE_PHOTO_MESSAGE: "Ты можешь отправить мне любое фото, а я расскажу о нем",
     HELP_MESSAGE: "Если что то не работает, я не при чем 🤪 \nПиши @gazzati",
 
+    LIMIT_MESSAGE: "Ты израсходовал весь лимит, дай мне отдохнуть 😒",
     ERROR_MESSAGE: "Прости, что то пошло не так, я исправлюсь 🥹",
     ERROR_VISION: "Я не смогла понять что на этом изображени 😥",
     ERROR_GENERATE_IMAGE: "В процессе генерации изображения произошла ошибка 😿",

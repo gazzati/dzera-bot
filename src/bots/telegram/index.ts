@@ -9,6 +9,7 @@ import { tgLog } from "@helpers/logger"
 import { visionTemplate } from "@helpers/templates"
 import { convertToWav } from "@services/ffmpeg"
 import { recognizeAudio } from "@services/recognizer"
+import { saveTokens, checkTokensLimit } from "@services/storage"
 
 import type OpenAI from "openai"
 
@@ -30,11 +31,17 @@ class Telegram extends Storage {
   }
 
   public process() {
-    this.bot.on("message", msg => {
+    this.bot.on("message", async msg => {
       const { from, chat, text } = msg
       if (!from || !text) return
 
       this.initContext(chat)
+
+      if(await checkTokensLimit(from.id)) {
+        tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
+        this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
+        return
+      }
 
       if (COMMANDS.includes(text)) return this.commands.call(from, chat, text)
 
@@ -43,16 +50,28 @@ class Telegram extends Storage {
       this.message(from, chat, text)
     })
 
-    this.bot.on("voice", msg => {
+    this.bot.on("voice", async  msg => {
       const { from, chat, voice } = msg
       if (!from || !voice) return
+
+      if(await checkTokensLimit(from.id)) {
+        tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
+        this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
+        return
+      }
 
       this.voice(from, chat, voice)
     })
 
-    this.bot.on("photo", msg => {
+    this.bot.on("photo", async msg => {
       const { from, chat, photo } = msg
       if (!from || !photo) return
+
+      if(await checkTokensLimit(from.id)) {
+        tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
+        this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
+        return
+      }
 
       this.photo(from, chat, photo)
     })
@@ -75,6 +94,8 @@ class Telegram extends Storage {
       this.sendMessage(chat, result)
 
       tgLog({ from, message, result, tokens })
+
+      saveTokens(from.id, tokens)
 
       this.saveResult(chat, result)
     } catch (error) {
