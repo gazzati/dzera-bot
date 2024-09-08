@@ -9,24 +9,24 @@ import { tgLog } from "@helpers/logger"
 import { visionTemplate } from "@helpers/templates"
 import { convertToWav } from "@services/ffmpeg"
 import { recognizeAudio } from "@services/recognizer"
-import { saveTokens, checkTokensLimit } from "@services/storage"
+import Storage from "@services/storage"
 
 import type OpenAI from "openai"
 
 import Commands, { COMMANDS } from "./Commands"
-import Storage from "./Storage"
 
-class Telegram extends Storage {
+class Telegram  {
+  private storage: Storage
   private bot: TelegramBot
   private commands: Commands
 
   constructor(private openAI: OpenAI) {
-    super()
+    this.storage = new Storage()
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
     this.commands = new Commands(
       (chat: Chat, message: string) => this.sendMessage(chat, message),
-      (chat: Chat) => this.clearContext(chat),
-      (chat: Chat) => this.setChatWaitingImage(chat, true)
+      (chat: Chat) => this.storage.clearContext(chat.id),
+      (chat: Chat) => this.storage.setChatWaitingImage(chat.id, true)
     )
   }
 
@@ -35,9 +35,7 @@ class Telegram extends Storage {
       const { from, chat, text } = msg
       if (!from || !text) return
 
-      this.initContext(chat)
-
-      if(await checkTokensLimit(from.id)) {
+      if(await this.storage.checkTokensLimit(from.id)) {
         tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
         this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
         return
@@ -45,7 +43,7 @@ class Telegram extends Storage {
 
       if (COMMANDS.includes(text)) return this.commands.call(from, chat, text)
 
-      if (this.getChatWaitingImage(chat)) return this.generateImage(from, chat, text)
+      if (await this.storage.getChatWaitingImage(chat.id)) return this.generateImage(from, chat, text)
 
       this.message(from, chat, text)
     })
@@ -54,7 +52,7 @@ class Telegram extends Storage {
       const { from, chat, voice } = msg
       if (!from || !voice) return
 
-      if(await checkTokensLimit(from.id)) {
+      if(await this.storage.checkTokensLimit(from.id)) {
         tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
         this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
         return
@@ -67,7 +65,7 @@ class Telegram extends Storage {
       const { from, chat, photo } = msg
       if (!from || !photo) return
 
-      if(await checkTokensLimit(from.id)) {
+      if(await this.storage.checkTokensLimit(from.id)) {
         tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
         this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
         return
@@ -81,8 +79,8 @@ class Telegram extends Storage {
     this.bot.sendChatAction(chat.id, "typing")
 
     this.createOrUpdateChat(chat)
-    this.saveQuery(chat, message)
-    const messages = this.getContextMessages(chat)
+    await this.storage.saveContextQuery(chat.id, message)
+    const messages = await this.storage.getContextMessages(chat.id)
 
     try {
       const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
@@ -95,9 +93,9 @@ class Telegram extends Storage {
 
       tgLog({ from, message, result, tokens })
 
-      saveTokens(from.id, tokens)
+      this.storage.saveTokens(from.id, tokens)
 
-      this.saveResult(chat, result)
+      this.storage.saveContextResult(chat.id, result)
     } catch (error) {
       tgLog({ from, message, error })
       this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
@@ -149,7 +147,7 @@ class Telegram extends Storage {
         return
       }
 
-      this.clearContext(chat)
+      this.storage.clearContext(chat.id)
 
       const messages = visionTemplate(image)
 
@@ -176,7 +174,7 @@ class Telegram extends Storage {
 
   private async generateImage(from: User, chat: Chat, text: string) {
     this.bot.sendChatAction(chat.id, "upload_photo")
-    this.setChatWaitingImage(chat, false)
+    this.storage.setChatWaitingImage(chat.id, false)
 
     try {
       const response = await this.openAI.images.generate({
@@ -197,7 +195,7 @@ class Telegram extends Storage {
 
       tgLog({ from, message: text, result, isGenerateImage: true })
 
-      this.clearContext(chat)
+      this.storage.clearContext(chat.id)
     } catch (error) {
       tgLog({ from, isGenerateImage: true, error })
       this.sendMessage(chat, config.phrases.ERROR_GENERATE_IMAGE)

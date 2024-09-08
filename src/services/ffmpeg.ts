@@ -32,7 +32,7 @@ export const convertToWav = async (path: string): Promise<string> => {
 
 export const setupFolder = () => {
   return new Promise(resolve => {
-    fs.rmdir(config.filesPath, { recursive: true }, () => {
+    fs.rm(config.filesPath, { recursive: true }, () => {
       fs.mkdirSync(config.filesPath)
       resolve(1)
     })
