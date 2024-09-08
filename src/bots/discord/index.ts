@@ -45,8 +45,8 @@ class Discord {
   }
 
   private getMessages(text: string) {
-    if (this.context.length > config.contextLengthLimit) {
-      this.context.splice(0, this.context.length - config.contextLengthLimit)
+    if (this.context.length > 500) {
+      this.context.splice(0, this.context.length - 500)
     }
 
     this.context.push(text)
