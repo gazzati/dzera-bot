@@ -61,18 +61,18 @@ class Telegram  {
       this.voice(from, chat, voice)
     })
 
-    this.bot.on("photo", async msg => {
-      const { from, chat, photo } = msg
-      if (!from || !photo) return
+    // this.bot.on("photo", async msg => {
+    //   const { from, chat, photo } = msg
+    //   if (!from || !photo) return
 
-      if(await this.storage.checkTokensLimit(from.id)) {
-        tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
-        this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
-        return
-      }
+    //   if(await this.storage.checkTokensLimit(from.id)) {
+    //     tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
+    //     this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
+    //     return
+    //   }
 
-      this.photo(from, chat, photo)
-    })
+    //   this.photo(from, chat, photo)
+    // })
   }
 
   private async message(from: User, chat: Chat, message: string) {
@@ -83,7 +83,11 @@ class Telegram  {
     const messages = await this.storage.getContextMessages(chat.id)
 
     try {
-      const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
+      const response = await this.openAI.chat.completions.create({
+        model: config.gptModel,
+        max_tokens: 800, // ~ 4096 chars (TG limit)
+        messages
+      })
 
       const tokens = response.usage?.total_tokens || 0
       const result = response.choices[0].message?.content
