@@ -26,7 +26,8 @@ class Telegram {
     this.storage = new Storage()
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
     this.commands = new Commands(
-      (chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) => this.sendMessage(chat, message, inlineKeyboard),
+      (chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) =>
+        this.sendMessage(chat, message, inlineKeyboard),
       (chat: Chat) => this.storage.clearContext(chat.id)
     )
   }
@@ -69,14 +70,14 @@ class Telegram {
     const dbChat = await this.createOrUpdateChat(chat)
     const model = dbChat.model as Model
 
-    if(!availableModels.includes(model)) {
+    if (!availableModels.includes(model)) {
       this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
       return tgLog({ from, error: `Unavailable model ${model}` })
     }
 
     await this.storage.saveContextQuery(chat.id, message)
     const messages = await this.storage.getContextMessages(chat.id)
-console.log({ model: model || config.defaultModel})
+    console.log({ model: model || config.defaultModel })
     try {
       const response = await this.openAI.chat.completions.create({
         model: model || config.defaultModel,
@@ -112,7 +113,7 @@ console.log({ model: model || config.defaultModel})
     if (data.includes(TelegramCommand.Model)) {
       const [, model] = data.split(":") as [any, Model]
 
-      if(!availableModels.includes(model)) {
+      if (!availableModels.includes(model)) {
         this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
         return tgLog({ from, error: `Unavailable model ${model}` })
       }

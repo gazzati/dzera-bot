@@ -11,7 +11,7 @@ systemTgBot.onText(/\/chats/, async msg => {
   const { chat } = msg
   if (chat.id !== config.systemTelegramChatId) return systemTgBot.sendMessage(chat.id, "Access denied")
 
-  const chatsResponse = await entities.Chat.find({ order: { count: "DESC" }})
+  const chatsResponse = await entities.Chat.find({ order: { count: "DESC" } })
 
   const result = chatsResponse.reduce((acc, item) => {
     const user = `${item.username}(${item.first_name || ""}${item.last_name ? ` ${item.last_name}` : ""})`

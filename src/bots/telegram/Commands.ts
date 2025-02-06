@@ -1,4 +1,4 @@
-import {Chat, User, InlineKeyboardButton } from 'node-telegram-bot-api';
+import { Chat, User, InlineKeyboardButton } from "node-telegram-bot-api"
 
 import config from "@root/config"
 import { entities } from "@root/database/data-source"
@@ -16,7 +16,7 @@ export const COMMANDS: Array<string> = [
 class Commands {
   constructor(
     private sendMessage: (chat: Chat, messages: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) => void,
-    private clearContext: (chat: Chat) => void,
+    private clearContext: (chat: Chat) => void
   ) {}
 
   public call(from: User, chat: Chat, action: string) {

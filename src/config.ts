@@ -1,8 +1,8 @@
 import dotenv from "dotenv"
 import Joi from "joi"
 
-import { Model, ModelName } from '@root/interfaces/models'
-import {TelegramCommand} from '@root/interfaces/telegram'
+import { Model, ModelName } from "@root/interfaces/models"
+import { TelegramCommand } from "@root/interfaces/telegram"
 
 import type { DalleSize } from "@interfaces/openai"
 
