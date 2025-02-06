@@ -1,4 +1,4 @@
-import { Chat, User } from "node-telegram-bot-api"
+import { Chat, User, InlineKeyboardButton } from "node-telegram-bot-api"
 
 import config from "@root/config"
 import { entities } from "@root/database/data-source"
@@ -8,17 +8,15 @@ import { TelegramCommand } from "@interfaces/telegram"
 
 export const COMMANDS: Array<string> = [
   TelegramCommand.Start,
-  TelegramCommand.GenerateImage,
-  TelegramCommand.AnalyzePhoto,
+  TelegramCommand.Model,
   TelegramCommand.Reset,
   TelegramCommand.Help
 ]
 
 class Commands {
   constructor(
-    private sendMessage: (chat: Chat, messages: string) => void,
-    private clearContext: (chat: Chat) => void,
-    private setChatWaitingImage: (chat: Chat) => void
+    private sendMessage: (chat: Chat, messages: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) => void,
+    private clearContext: (chat: Chat) => void
   ) {}
 
   public call(from: User, chat: Chat, action: string) {
@@ -26,19 +24,17 @@ class Commands {
 
     switch (action) {
       case TelegramCommand.Start:
-        return this.startCommand(chat)
-      case TelegramCommand.GenerateImage:
-        return this.generateImageCommand(chat)
-      case TelegramCommand.AnalyzePhoto:
-        return this.analyzePhotoCommand(chat)
+        return this.start(chat)
+      case TelegramCommand.Model:
+        return this.model(chat)
       case TelegramCommand.Reset:
-        return this.resetCommand(chat)
+        return this.reset(chat)
       case TelegramCommand.Help:
-        return this.helpCommand(chat)
+        return this.help(chat)
     }
   }
 
-  private startCommand(chat: Chat) {
+  private start(chat: Chat) {
     this.sendMessage(chat, config.phrases.START_MESSAGE)
 
     entities.Chat.save({
@@ -49,22 +45,17 @@ class Commands {
     })
   }
 
-  private generateImageCommand(chat: Chat) {
-    this.sendMessage(chat, config.phrases.GENERATE_IMAGE_MESSAGE)
-    this.setChatWaitingImage(chat)
+  private model(chat: Chat) {
+    this.sendMessage(chat, config.phrases.CHOOSE_MODEL_MESSAGE, config.inlineKeyboard.models)
   }
 
-  private analyzePhotoCommand(chat: Chat) {
-    this.sendMessage(chat, config.phrases.ANALYZE_PHOTO_MESSAGE)
-  }
-
-  private resetCommand(chat: Chat) {
+  private reset(chat: Chat) {
     this.sendMessage(chat, config.phrases.RESET_MESSAGE)
 
     this.clearContext(chat)
   }
 
-  private helpCommand(chat: Chat) {
+  private help(chat: Chat) {
     this.sendMessage(chat, config.phrases.HELP_MESSAGE)
   }
 }

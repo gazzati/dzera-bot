@@ -37,7 +37,7 @@ class Discord {
       }
 
       const messages = this.getMessages(text)
-      const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
+      const response = await this.openAI.chat.completions.create({ model: config.defaultModel, messages })
       const result = response.choices[0].message?.content as string
 
       message.reply(result)

@@ -1,5 +1,7 @@
 import { Column, Entity, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from "typeorm"
 
+import { Model } from "@root/interfaces/models"
+
 @Entity({ name: "chats" })
 export class Chat {
   @PrimaryColumn()
@@ -16,6 +18,9 @@ export class Chat {
 
   @Column({ default: 0 })
   count: number
+
+  @Column({ default: Model.Gpt4oMini })
+  model: string
 
   @Column()
   @CreateDateColumn()

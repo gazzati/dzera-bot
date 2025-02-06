@@ -8,7 +8,6 @@
 * 📝 Text assistant *GPT* based with context preservation
 * 🧑‍🎨️ I can generate images using *DALL·E*
 * 🔉 I recognize voice messages
-* 🌄 Also, I recently learned to analyze images and tell what they show
 
 ### 🤝 Have any ideas or suggestions?
 <i>Contact me</i><br>
