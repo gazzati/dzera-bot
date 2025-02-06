@@ -1,21 +1,23 @@
-import fs from "fs"
-
-import TelegramBot, { User, Chat, Voice, PhotoSize } from "node-telegram-bot-api"
+import TelegramBot, { User, Chat, Voice, InlineKeyboardButton, CallbackQuery } from "node-telegram-bot-api"
 
 import config from "@root/config"
 
 import { entities } from "@database/data-source"
 import { tgLog } from "@helpers/logger"
-import { visionTemplate } from "@helpers/templates"
 import { convertToWav } from "@services/ffmpeg"
 import { recognizeAudio } from "@services/recognizer"
 import Storage from "@services/storage"
+
+import { Model } from "@interfaces/models"
+import { TelegramCommand } from "@interfaces/telegram"
 
 import type OpenAI from "openai"
 
 import Commands, { COMMANDS } from "./Commands"
 
-class Telegram  {
+const availableModels = [Model.Gpt4o, Model.Gpt4oMini]
+
+class Telegram {
   private storage: Storage
   private bot: TelegramBot
   private commands: Commands
@@ -24,9 +26,8 @@ class Telegram  {
     this.storage = new Storage()
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
     this.commands = new Commands(
-      (chat: Chat, message: string) => this.sendMessage(chat, message),
-      (chat: Chat) => this.storage.clearContext(chat.id),
-      (chat: Chat) => this.storage.setChatWaitingImage(chat.id, true)
+      (chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) => this.sendMessage(chat, message, inlineKeyboard),
+      (chat: Chat) => this.storage.clearContext(chat.id)
     )
   }
 
@@ -35,7 +36,7 @@ class Telegram  {
       const { from, chat, text } = msg
       if (!from || !text) return
 
-      if(await this.storage.checkTokensLimit(from.id)) {
+      if (await this.storage.checkTokensLimit(from.id)) {
         tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
         this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
         return
@@ -43,16 +44,16 @@ class Telegram  {
 
       if (COMMANDS.includes(text)) return this.commands.call(from, chat, text)
 
-      if (await this.storage.getChatWaitingImage(chat.id)) return this.generateImage(from, chat, text)
-
       this.message(from, chat, text)
     })
 
-    this.bot.on("voice", async  msg => {
+    this.bot.on("callback_query", query => this.callbackQuery(query))
+
+    this.bot.on("voice", async msg => {
       const { from, chat, voice } = msg
       if (!from || !voice) return
 
-      if(await this.storage.checkTokensLimit(from.id)) {
+      if (await this.storage.checkTokensLimit(from.id)) {
         tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
         this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
         return
@@ -60,31 +61,25 @@ class Telegram  {
 
       this.voice(from, chat, voice)
     })
-
-    // this.bot.on("photo", async msg => {
-    //   const { from, chat, photo } = msg
-    //   if (!from || !photo) return
-
-    //   if(await this.storage.checkTokensLimit(from.id)) {
-    //     tgLog({ from, message: config.phrases.LIMIT_MESSAGE })
-    //     this.sendMessage(chat, config.phrases.LIMIT_MESSAGE)
-    //     return
-    //   }
-
-    //   this.photo(from, chat, photo)
-    // })
   }
 
   private async message(from: User, chat: Chat, message: string) {
     this.bot.sendChatAction(chat.id, "typing")
 
-    this.createOrUpdateChat(chat)
+    const dbChat = await this.createOrUpdateChat(chat)
+    const model = dbChat.model as Model
+
+    if(!availableModels.includes(model)) {
+      this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
+      return tgLog({ from, error: `Unavailable model ${model}` })
+    }
+
     await this.storage.saveContextQuery(chat.id, message)
     const messages = await this.storage.getContextMessages(chat.id)
-
+console.log({ model: model || config.defaultModel})
     try {
       const response = await this.openAI.chat.completions.create({
-        model: config.gptModel,
+        model: model || config.defaultModel,
         max_tokens: 800, // ~ 4096 chars (TG limit)
         messages
       })
@@ -103,6 +98,31 @@ class Telegram  {
     } catch (error) {
       tgLog({ from, message, error })
       this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
+    }
+  }
+
+  private async callbackQuery(query: CallbackQuery) {
+    const { message, data, from } = query
+    if (!message || !data || !from) return
+
+    tgLog({ from, action: data })
+
+    const { chat } = message
+
+    if (data.includes(TelegramCommand.Model)) {
+      const [, model] = data.split(":") as [any, Model]
+
+      if(!availableModels.includes(model)) {
+        this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
+        return tgLog({ from, error: `Unavailable model ${model}` })
+      }
+
+      await this.createOrUpdateChat(chat, model)
+
+      this.sendMessage(chat, config.phrases.CHANGED_MODEL)
+      this.bot.deleteMessage(chat.id, message.message_id)
+
+      this.storage.clearContext(chat.id)
     }
   }
 
@@ -134,109 +154,36 @@ class Telegram  {
     }
   }
 
-  private async photo(from: User, chat: Chat, photo: Array<PhotoSize>) {
-    this.bot.sendChatAction(chat.id, "typing")
-
-    const photoFile = photo.shift() // shift for low quality, pop for high
-    if (!photoFile) return
-
-    try {
-      const filePath = await this.bot.downloadFile(photoFile.file_id, config.filesPath)
-
-      const file = fs.readFileSync(filePath)
-      const image = Buffer.from(file).toString("base64")
-      if (!image) {
-        tgLog({ from, isVision: true, error: "Image error" })
-        this.sendMessage(chat, config.phrases.ERROR_VISION)
-        return
-      }
-
-      this.storage.clearContext(chat.id)
-
-      const messages = visionTemplate(image)
-
-      const response = await this.openAI.chat.completions.create({ model: config.gptModel, messages })
-
-      const tokens = response.usage?.total_tokens || 0
-      const result = response?.choices[0]?.message?.content
-      if (!result) {
-        tgLog({ from, isVision: true, error: "Result error" })
-        this.sendMessage(chat, config.phrases.ERROR_VISION)
-        return
-      }
-
-      // TODO: add context for vision
-
-      this.sendMessage(chat, result)
-
-      tgLog({ from, result, tokens, isVision: true })
-    } catch (error) {
-      tgLog({ from, error, isVision: true })
-      this.sendMessage(chat, config.phrases.ERROR_VISION)
-    }
-  }
-
-  private async generateImage(from: User, chat: Chat, text: string) {
-    this.bot.sendChatAction(chat.id, "upload_photo")
-    this.storage.setChatWaitingImage(chat.id, false)
-
-    try {
-      const response = await this.openAI.images.generate({
-        model: config.dalleModel,
-        prompt: text,
-        n: 1,
-        size: config.dalleSize
-      })
-
-      const result = response?.data[0]?.url
-      if (!result) {
-        tgLog({ from, isGenerateImage: true, error: "Result error" })
-        this.sendMessage(chat, config.phrases.ERROR_VISION)
-        return
-      }
-
-      this.bot.sendPhoto(chat.id, result)
-
-      tgLog({ from, message: text, result, isGenerateImage: true })
-
-      this.storage.clearContext(chat.id)
-    } catch (error) {
-      tgLog({ from, isGenerateImage: true, error })
-      this.sendMessage(chat, config.phrases.ERROR_GENERATE_IMAGE)
-    }
-  }
-
-  private async createOrUpdateChat(chat: Chat) {
+  private async createOrUpdateChat(chat: Chat, model?: Model) {
     const chatData = await entities.Chat.findOneBy({ id: String(chat.id) })
     if (!chatData) {
-      entities.Chat.save({
+      const createdChat = await entities.Chat.save({
         id: String(chat.id),
         username: chat.username,
         first_name: chat.first_name,
-        last_name: chat.last_name
+        last_name: chat.last_name,
+        model: model || Model.Gpt4oMini
       })
 
-      return
+      return createdChat
     }
 
     chatData.count++
+    if (model) chatData.model = model
+
     await entities.Chat.save(chatData)
+
+    return chatData
   }
 
-  private sendMessage(chat: Chat, message: string) {
-    this.bot.sendMessage(chat.id, message, {
-      parse_mode: "Markdown"
-      // reply_markup: {
-      //   keyboard: [
-      //     [{text: 'test 1'}],
-      //     [{text: 'test 2'}],
-      //     [{text: 'test 3'}],
+  private sendMessage(chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) {
+    if (!inlineKeyboard) return this.bot.sendMessage(chat.id, message)
 
-      //   ],
-      //   is_persistent: true,
-      //   remove_keyboard: false,
-      //   one_time_keyboard: false
-      // }
+    this.bot.sendMessage(chat.id, message, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: inlineKeyboard
+      }
     })
   }
 }

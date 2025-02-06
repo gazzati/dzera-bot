@@ -1,13 +1,18 @@
 import dotenv from "dotenv"
 import Joi from "joi"
 
+import { Model, ModelName } from '@root/interfaces/models'
+import {TelegramCommand} from '@root/interfaces/telegram'
+
 import type { DalleSize } from "@interfaces/openai"
 
 dotenv.config()
 
 const envVarsSchema = Joi.object({
   GPT_KEY: Joi.string().description("OpenAI API key"),
-  GPT_MODEL: Joi.string().description("OpenAI model"),
+  DS_KEY: Joi.string().description("DeepSeek API key"),
+
+  DEFAULT_MODEL: Joi.string().description("Default model"),
 
   TELEGRAM_TOKEN: Joi.string().description("Telegram token"),
   SYSTEM_TELEGRAM_TOKEN: Joi.string().description("System telegram token"),
@@ -29,7 +34,9 @@ if (error) new Error(`Config validation error: ${error.message}`)
 
 export default {
   gptKey: envVars.GPT_KEY,
-  gptModel: envVars.GPT_MODEL,
+  dsKey: envVars.DS_KEY,
+
+  defaultModel: envVars.DEFAULT_MODEL,
 
   dalleModel: envVars.DALLE_MODEL,
   dalleSize: "256x256" as DalleSize,
@@ -55,15 +62,22 @@ export default {
     INIT_MESSAGE: "Теперь тебя зовут Дзера. Отвечай в женском роде.",
 
     START_MESSAGE: `Привет, я Дзера, твой ассистент 🌸 \nПостараюсь ответить на любой вопрос ❤️ \nКстати, я научилась понимать голосовые сообщения и работать с изображениями ✨`,
+    CHOOSE_MODEL_MESSAGE: "Выберите нейросеть из предложенных ниже 😊",
+    CHANGED_MODEL: "Модель активированна",
     RESET_MESSAGE: "Контекст очищен. Я забыла все о чем мы сейчас говорили 🧘‍♀️",
-    GENERATE_IMAGE_MESSAGE: "📌 Введи текст для генерации изображения",
-    ANALYZE_PHOTO_MESSAGE: "Ты можешь отправить мне любое фото, а я расскажу о нем",
     HELP_MESSAGE: "Если что то не работает, я не при чем 🤪 \nПиши @gazzati",
 
     LIMIT_MESSAGE: "Ты израсходовал весь лимит, дай мне отдохнуть 😒",
     ERROR_MESSAGE: "Прости, что то пошло не так, я исправлюсь 🥹",
-    ERROR_VISION: "Я не смогла понять что на этом изображени 😥",
-    ERROR_GENERATE_IMAGE: "В процессе генерации изображения произошла ошибка 😿",
+    UNAVAILABLE_MODEL: "Данная модель тебе не доступна ⛔️",
     LONG_AUDIO_DURATION: "Голосовое сообщение должно быть не больше 10 секунд 😏"
+  },
+
+  inlineKeyboard: {
+    models: [
+      [{ text: `👍 ${ModelName.Gpt4oMini}`, callback_data: `${TelegramCommand.Model}:${Model.Gpt4oMini}` }],
+      [{ text: `🔥 ${ModelName.Gpt4o}`, callback_data: `${TelegramCommand.Model}:${Model.Gpt4o}` }],
+      [{ text: `🔒 ${ModelName.DeepSeek}`, callback_data: `${TelegramCommand.Model}:${Model.DeepSeek}` }]
+    ]
   }
 }

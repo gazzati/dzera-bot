@@ -15,9 +15,6 @@ class Storage {
     readonly userTokensTtlSec = 60 * 60 * 24 // 1 day
     readonly maxTokensPerDay: 30_000
 
-    readonly waitingImageKey = "waiting-image"
-    readonly waitingImageTtlSec = 60 * 60 * 24 // 1 day
-
     private async appendChatContext (chatId: number, data: ChatContext): Promise<void> {
         await redis.setex(
             `${this.chatContextKey}:${chatId}:${uuidv4().replace("-","").substring(0,8)}`,
@@ -91,18 +88,6 @@ class Storage {
         if(!userTokens) return false
 
         return Number(userTokens) > this.maxTokensPerDay
-    }
-
-    public async setChatWaitingImage (chatId: number, state: boolean): Promise<void> {
-        const key = `${this.waitingImageKey}:${chatId}`
-        await redis.setex(key, this.waitingImageTtlSec, `${state}`)
-    }
-
-    public async getChatWaitingImage (chatId: number): Promise<boolean> {
-        const key = `${this.waitingImageKey}:${chatId}`
-        const state = await redis.get(key)
-
-        return state === "true"
     }
 }
 

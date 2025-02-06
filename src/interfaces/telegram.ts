@@ -1,7 +1,6 @@
 export enum TelegramCommand {
   Start = "/start",
-  GenerateImage = "/generate_image",
-  AnalyzePhoto = "/analyze_photo",
+  Model = "/model",
   Reset = "/reset",
   Help = "/help"
 }
