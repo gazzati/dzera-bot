@@ -184,13 +184,13 @@ class Telegram {
   }
 
   private sendMessage(chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) {
-    if (!inlineKeyboard) return this.bot.sendMessage(chat.id, message)
-
     this.bot.sendMessage(chat.id, message, {
-      parse_mode: "MarkdownV2",
-      reply_markup: {
-        inline_keyboard: inlineKeyboard
-      }
+      parse_mode: "Markdown",
+      ...(inlineKeyboard && {
+        reply_markup: {
+          inline_keyboard: inlineKeyboard
+        }
+      })
     })
   }
 }
