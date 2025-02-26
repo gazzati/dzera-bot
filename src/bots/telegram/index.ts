@@ -15,14 +15,14 @@ import type OpenAI from "openai"
 
 import Commands, { COMMANDS } from "./Commands"
 
-const availableModels = [Model.Gpt4o, Model.Gpt4oMini]
+const availableModels = [Model.Gpt4oMini, Model.DeepSeek]
 
 class Telegram {
   private storage: Storage
   private bot: TelegramBot
   private commands: Commands
 
-  constructor(private openAI: OpenAI) {
+  constructor(private openAI: OpenAI, private deepSeek: OpenAI) {
     this.storage = new Storage()
     this.bot = new TelegramBot(config.telegramToken, { polling: true })
     this.commands = new Commands(
@@ -77,9 +77,15 @@ class Telegram {
 
     await this.storage.saveContextQuery(chat.id, message)
     const messages = await this.storage.getContextMessages(chat.id)
-    console.log({ model: model || config.defaultModel })
+
     try {
-      const response = await this.openAI.chat.completions.create({
+      const response = model === Model.DeepSeek
+      ? await this.deepSeek.chat.completions.create({
+        model,
+        max_tokens: 800, // ~ 4096 chars (TG limit)
+        messages
+      })
+      : await this.openAI.chat.completions.create({
         model: model || config.defaultModel,
         max_tokens: 800, // ~ 4096 chars (TG limit)
         messages
@@ -91,7 +97,7 @@ class Telegram {
 
       this.sendMessage(chat, result)
 
-      tgLog({ from, message, result, tokens })
+      tgLog({ from, message, result, model, tokens })
 
       this.storage.saveTokens(from.id, tokens)
 

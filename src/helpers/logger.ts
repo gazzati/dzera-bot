@@ -10,6 +10,7 @@ interface LogArgs {
   transcript?: string
   result?: string
   tokens?: number
+  model?: string
   error?: any
 }
 
@@ -49,7 +50,7 @@ const getUserLog = (from: User): string => {
   return `👨‍💻 @${from.username}${userDetails}`
 }
 
-export const tgLog = ({ from, action, message, transcript, result, tokens, error }: LogArgs) => {
+export const tgLog = ({ from, action, message, transcript, result, tokens, model, error }: LogArgs) => {
   const dateLog = getLogDate()
 
   const userLog = getUserLog(from)
@@ -57,7 +58,7 @@ export const tgLog = ({ from, action, message, transcript, result, tokens, error
   const actionLog = `🔢 ${action}`
   const messageLog = `💬 ${message}`
   const transcriptLog = `🔉 ${transcript}`
-  const tokensLog = `💰 ${tokens} tokens`
+  const tokensLog = `💰 ${tokens} tokens${model ? ` [${model}]` : ''}`
   const resultLog = `✅ ${result && result.length > 50 ? `${result?.slice(0, 50)}...` : result}`
 
   log(dateLog, Color.Cyan)

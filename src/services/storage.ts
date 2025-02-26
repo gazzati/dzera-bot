@@ -8,7 +8,7 @@ import type { ChatContext } from "@interfaces/storage"
 
 class Storage {
   readonly chatContextKey = "chat-context"
-  readonly chatContextKeyTtlSec = 60 * 5 // 5 min
+  readonly chatContextKeyTtlSec = 60 * 10 // 10 min
   readonly maxResultLengthToSave = 500
 
   readonly userTokensKey = "user-tokens"
@@ -37,7 +37,7 @@ class Storage {
 
     const messages = [
       {
-        role: Role.User,
+        role: Role.System,
         content: config.phrases.INIT_MESSAGE
       },
       ...result

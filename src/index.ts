@@ -14,5 +14,10 @@ setupFolder()
 
 const openAI = new OpenAI({ apiKey: config.gptKey })
 
-new TelegramBot(openAI).process()
+const deepSeek = new OpenAI({
+    baseURL: 'https://api.deepseek.com',
+    apiKey: config.dsKey
+});
+
+new TelegramBot(openAI, deepSeek).process()
 // new DiscordBot(openAI).process()
