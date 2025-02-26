@@ -76,8 +76,8 @@ export default {
   inlineKeyboard: {
     models: [
       [{ text: `👍 ${ModelName.Gpt4oMini}`, callback_data: `${TelegramCommand.Model}:${Model.Gpt4oMini}` }],
-      [{ text: `🔥 ${ModelName.Gpt4o}`, callback_data: `${TelegramCommand.Model}:${Model.Gpt4o}` }],
-      [{ text: `🔒 ${ModelName.DeepSeek}`, callback_data: `${TelegramCommand.Model}:${Model.DeepSeek}` }]
+      [{ text: `🔒 ${ModelName.Gpt4o}`, callback_data: `${TelegramCommand.Model}:${Model.Gpt4o}` }],
+      [{ text: `🔥 ${ModelName.DeepSeek}`, callback_data: `${TelegramCommand.Model}:${Model.DeepSeek}` }]
     ]
   }
 }
