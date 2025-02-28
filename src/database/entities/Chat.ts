@@ -22,6 +22,9 @@ export class Chat {
   @Column({ default: Model.Gpt4oMini })
   model: string
 
+  @Column({ default: false })
+  is_blocked: boolean
+
   @Column()
   @CreateDateColumn()
   created_at: Date

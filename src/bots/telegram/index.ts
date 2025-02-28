@@ -70,6 +70,11 @@ class Telegram {
     const dbChat = await this.createOrUpdateChat(chat)
     const model = dbChat.model as Model
 
+    if(dbChat.is_blocked) {
+      this.sendMessage(chat, config.phrases.USER_BLOCKED)
+      return tgLog({ from, error: "User blocked!" })
+    }
+
     if (!availableModels.includes(model)) {
       this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
       return tgLog({ from, error: `Unavailable model ${model}` })
