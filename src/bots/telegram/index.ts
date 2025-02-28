@@ -77,7 +77,7 @@ class Telegram {
 
     if (!availableModels.includes(model)) {
       this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
-      return tgLog({ from, error: `Unavailable model ${model}` })
+      return tgLog({ from, message, error: `Unavailable model ${model}` })
     }
 
     await this.storage.saveContextQuery(chat.id, message)
