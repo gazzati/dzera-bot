@@ -15,7 +15,7 @@ import type OpenAI from "openai"
 
 import Commands, { COMMANDS } from "./Commands"
 
-const availableModels = [Model.Gpt4oMini, Model.DeepSeek]
+const availableModels = [Model.Gpt4oMini, Model.Gpt5Mini, Model.DeepSeek]
 
 class Telegram {
   private storage: Storage
@@ -174,7 +174,7 @@ class Telegram {
         username: chat.username,
         first_name: chat.first_name,
         last_name: chat.last_name,
-        model: model || Model.Gpt4oMini
+        model: model || Model.Gpt5Mini
       })
 
       return createdChat
