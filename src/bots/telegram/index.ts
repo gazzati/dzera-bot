@@ -87,7 +87,7 @@ class Telegram {
       })
       : await this.openAI.chat.completions.create({
         model: model || config.defaultModel,
-        max_tokens: 800, // ~ 4096 chars (TG limit)
+        max_completion_tokens: 800, // ~ 4096 chars (TG limit)
         messages
       })
 
