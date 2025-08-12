@@ -103,6 +103,7 @@ class Telegram {
 
       this.storage.saveContextResult(chat.id, result)
     } catch (error) {
+      console.error(error)
       tgLog({ from, message, error })
       this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
     }
