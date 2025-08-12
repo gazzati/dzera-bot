@@ -75,11 +75,6 @@ class Telegram {
       return tgLog({ from, message, error: "User blocked!" })
     }
 
-    if (!availableModels.includes(model)) {
-      this.sendMessage(chat, config.phrases.UNAVAILABLE_MODEL)
-      return tgLog({ from, error: `Unavailable model ${model}` })
-    }
-
     await this.storage.saveContextQuery(chat.id, message)
     const messages = await this.storage.getContextMessages(chat.id)
 
