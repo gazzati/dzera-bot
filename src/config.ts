@@ -30,7 +30,9 @@ const envVarsSchema = Joi.object({
   REDIS_PORT: Joi.number().default(6379).description("Redis port")
 })
 
-const { error, value: envVars } = envVarsSchema.validate(process.env)
+const { error, value: envVars } = envVarsSchema.validate(process.env, {
+  allowUnknown: true
+})
 if (error) throw new Error(`Config validation error: ${error.message}`)
 
 export default {
@@ -54,7 +56,6 @@ export default {
   psqlUsername: envVars.PSQL_USER,
   psqlPassword: envVars.PSQL_PASSWORD,
 
-  redisUrl: envVars.REDIS_URL || undefined,
   redisHost: envVars.REDIS_HOST,
   redisPort: Number(envVars.REDIS_PORT),
 
