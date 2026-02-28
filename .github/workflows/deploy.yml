@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/tim/dzera-bot
+            cd /home/dzera-bot
             if [ ! -f .env ]; then
               echo "Missing required file: .env"
               exit 1
