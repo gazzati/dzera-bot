@@ -3,5 +3,7 @@ services:
     image: gazzati/dzera-bot:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ${GOOGLE_CREDENTIALS_PATH:-./google-credentials.json}:/app/google-credentials.json:ro
