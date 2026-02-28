@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install modules
         run: yarn
       - name: ESLint
         run: yarn lint
-      - name: Prettier
-        run: yarn format
       - name: Typescript
         run: yarn type
+      - name: Build
+        run: ./node_modules/.bin/tsc -p tsconfig.json

@@ -3,6 +3,10 @@
     - telegram OpenAI assistant
 </h1>
 
+## Requirements
+* Node.js 24 LTS
+* Yarn 1.x
+
 
 ## ✨ What can I do
 * 📝 Text assistant *GPT* based with context preservation
