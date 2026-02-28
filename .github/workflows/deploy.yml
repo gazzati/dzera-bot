@@ -62,5 +62,5 @@ jobs:
               exit 1
             fi
             echo "IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}" > .env.deploy
-            docker compose --env-file .env --env-file .env.deploy pull dzera-bot
-            docker compose --env-file .env --env-file .env.deploy up -d --no-deps dzera-bot
+            docker compose --env-file .env --env-file .env.deploy pull dzera-bot redis
+            docker compose --env-file .env --env-file .env.deploy up -d dzera-bot redis

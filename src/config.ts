@@ -6,7 +6,7 @@ import { TelegramCommand } from "@root/interfaces/telegram"
 
 import type { DalleSize } from "@interfaces/openai"
 
-dotenv.config()
+dotenv.config({ quiet: true })
 
 const envVarsSchema = Joi.object({
   GPT_KEY: Joi.string().description("OpenAI API key"),
@@ -26,11 +26,12 @@ const envVarsSchema = Joi.object({
   PSQL_USER: Joi.string().default("root").description("Database User"),
   PSQL_PASSWORD: Joi.string().allow("").default("root").description("Database Password"),
 
-  REDIS_HOST: Joi.string().default("localhost").description("Redis host")
+  REDIS_HOST: Joi.string().default("localhost").description("Redis host"),
+  REDIS_PORT: Joi.number().default(6379).description("Redis port")
 })
 
 const { error, value: envVars } = envVarsSchema.validate(process.env)
-if (error) new Error(`Config validation error: ${error.message}`)
+if (error) throw new Error(`Config validation error: ${error.message}`)
 
 export default {
   gptKey: envVars.GPT_KEY,
@@ -53,7 +54,9 @@ export default {
   psqlUsername: envVars.PSQL_USER,
   psqlPassword: envVars.PSQL_PASSWORD,
 
+  redisUrl: envVars.REDIS_URL || undefined,
   redisHost: envVars.REDIS_HOST,
+  redisPort: Number(envVars.REDIS_PORT),
 
   filesPath: "files",
   audioFormat: "wav",

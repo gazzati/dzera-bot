@@ -12,7 +12,7 @@
    - `gazzati/dzera-bot:latest`
 3. Deploy job connects to VPS and writes `.env.deploy`:
    - `IMAGE_TAG=sha-<commit>`
-4. Compose pulls and restarts only `dzera-bot` service.
+4. Compose pulls and restarts `dzera-bot` and bundled `redis` service.
 
 ## Required VPS Layout
 Use one directory per project, without cloning the app repository.
@@ -34,6 +34,6 @@ From the project directory on VPS:
 
 ```bash
 echo "IMAGE_TAG=sha-<old-commit>" > .env.deploy
-docker compose --env-file .env --env-file .env.deploy pull dzera-bot
-docker compose --env-file .env --env-file .env.deploy up -d --no-deps dzera-bot
+docker compose --env-file .env --env-file .env.deploy pull dzera-bot redis
+docker compose --env-file .env --env-file .env.deploy up -d dzera-bot redis
 ```
