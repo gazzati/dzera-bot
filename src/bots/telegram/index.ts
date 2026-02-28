@@ -33,6 +33,14 @@ class Telegram {
   }
 
   public process() {
+    this.bot.on("polling_error", error => {
+      console.error("Telegram polling error", error)
+    })
+
+    this.bot.on("error", error => {
+      console.error("Telegram bot error", error)
+    })
+
     this.bot.on("message", async msg => {
       const { from, chat, text } = msg
       if (!from || !text) return
