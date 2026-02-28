@@ -102,7 +102,6 @@ class Telegram {
       const tokens = response.usage?.total_tokens || 0
       const result = response.choices[0].message?.content
       if (!result) {
-        console.error(response.choices[0])
         return this.sendMessage(chat, config.phrases.ERROR_MESSAGE)
       }
 
