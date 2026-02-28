@@ -11,9 +11,6 @@
     "lint": "eslint src/**/*.ts --fix",
     "type": "tsc --project tsconfig.json --noEmit"
   },
-  "engines": {
-    "node": ">=22 <25"
-  },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google-cloud/speech": "^6.5.0",
