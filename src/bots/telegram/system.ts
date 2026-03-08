@@ -9,23 +9,27 @@ import { sendSafeTelegramMessage } from "@helpers/telegram"
 export const systemTgBot = new TelegramBot(config.systemTelegramToken, { polling: true })
 
 systemTgBot.onText(/\/chats/, async msg => {
-  const { chat } = msg
-  if (chat.id !== config.systemTelegramChatId) {
-    return sendSafeTelegramMessage(systemTgBot, chat.id, "Access denied")
+  try {
+    const { chat } = msg
+    if (chat.id !== config.systemTelegramChatId) {
+      return sendSafeTelegramMessage(systemTgBot, chat.id, "Access denied")
+    }
+
+    const chatsResponse = await entities.Chat.find({ order: { count: "DESC" } })
+
+    const result = chatsResponse.reduce((acc, item) => {
+      const user = `${item.username}(${item.first_name || ""}${item.last_name ? ` ${item.last_name}` : ""})`
+      const createdDate = getLogDate(item.created_at)
+
+      const resultItem = `#${item.id} \nUSER: ${user} \nCREATED: ${createdDate} \nMESSAGES COUNT: ${item.count} \n========== \n\n`
+
+      return acc + resultItem
+    }, "")
+
+    if (!result) return sendSafeTelegramMessage(systemTgBot, chat.id, "---")
+
+    return sendSafeTelegramMessage(systemTgBot, chat.id, result)
+  } catch (error) {
+    console.error("System /chats error", error)
   }
-
-  const chatsResponse = await entities.Chat.find({ order: { count: "DESC" } })
-
-  const result = chatsResponse.reduce((acc, item) => {
-    const user = `${item.username}(${item.first_name || ""}${item.last_name ? ` ${item.last_name}` : ""})`
-    const createdDate = getLogDate(item.created_at)
-
-    const resultItem = `#${item.id} \nUSER: ${user} \nCREATED: ${createdDate} \nMESSAGES COUNT: ${item.count} \n========== \n\n`
-
-    return acc + resultItem
-  }, "")
-
-  if (!result) return sendSafeTelegramMessage(systemTgBot, chat.id, "---")
-
-  return sendSafeTelegramMessage(systemTgBot, chat.id, result)
 })

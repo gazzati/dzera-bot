@@ -1,7 +1,8 @@
 import TelegramBot from "node-telegram-bot-api"
 
 const TELEGRAM_MAX_MESSAGE_LENGTH = 4096
-const TELEGRAM_SAFE_CHUNK_LENGTH = 4000
+const TELEGRAM_SAFE_CHUNK_LENGTH = 3500
+const TELEGRAM_MIN_CHUNK_LENGTH = 200
 
 const splitMessage = (message: string, maxLength = TELEGRAM_SAFE_CHUNK_LENGTH): string[] => {
   if (message.length <= maxLength) return [message]
@@ -23,6 +24,11 @@ const splitMessage = (message: string, maxLength = TELEGRAM_SAFE_CHUNK_LENGTH): 
   return chunks
 }
 
+const isMessageTooLongError = (error: unknown): boolean => {
+  const message = String(error)
+  return message.includes("message is too long")
+}
+
 export const sendSafeTelegramMessage = async (
   bot: TelegramBot,
   chatId: number | string,
@@ -30,10 +36,23 @@ export const sendSafeTelegramMessage = async (
   options?: TelegramBot.SendMessageOptions
 ) => {
   const normalized = message || "-"
-  const maxLength = options?.parse_mode ? TELEGRAM_SAFE_CHUNK_LENGTH : TELEGRAM_MAX_MESSAGE_LENGTH
-  const messageChunks = splitMessage(normalized, maxLength)
+  const initialMaxLength = options?.parse_mode ? TELEGRAM_SAFE_CHUNK_LENGTH : Math.min(TELEGRAM_SAFE_CHUNK_LENGTH, TELEGRAM_MAX_MESSAGE_LENGTH)
+  const queue = splitMessage(normalized, initialMaxLength)
 
-  for (const chunk of messageChunks) {
-    await bot.sendMessage(chatId, chunk, options)
+  while (queue.length) {
+    const chunk = queue.shift()
+    if (!chunk) continue
+
+    try {
+      await bot.sendMessage(chatId, chunk, options)
+    } catch (error) {
+      if (!isMessageTooLongError(error) || chunk.length <= TELEGRAM_MIN_CHUNK_LENGTH) {
+        throw error
+      }
+
+      const nextLength = Math.max(TELEGRAM_MIN_CHUNK_LENGTH, Math.floor(chunk.length / 2))
+      const smallerChunks = splitMessage(chunk, nextLength)
+      queue.unshift(...smallerChunks)
+    }
   }
 }
