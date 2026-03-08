@@ -2,6 +2,7 @@ import { systemTgBot } from "@bots/telegram/system"
 import { User } from "node-telegram-bot-api"
 
 import config from "@root/config"
+import { sendSafeTelegramMessage } from "@helpers/telegram"
 
 interface LogArgs {
   from: User
@@ -73,12 +74,15 @@ export const tgLog = ({ from, action, message, transcript, result, tokens, model
 
   log(" ")
 
-  systemTgBot.sendMessage(
+  void sendSafeTelegramMessage(
+    systemTgBot,
     config.systemTelegramChatId,
     `${userLog} ${action ? `\n${actionLog}` : ""} ${message ? `\n${messageLog}` : ""} ${
       transcript ? `\n${transcriptLog}` : ""
     } ${result ? `\n${resultLog}` : ""} ${tokens ? `\n${tokensLog}` : ""} ${error ? `\n❗️ ${String(error)}` : ""}`
-  )
+  ).catch(sendError => {
+    console.error("System Telegram log send error", sendError)
+  })
 }
 
 export const log = (message: string, color = Color.Magenta) => {

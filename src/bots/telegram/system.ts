@@ -4,12 +4,15 @@ import config from "@root/config"
 
 import { entities } from "@database/data-source"
 import { getLogDate } from "@helpers/logger"
+import { sendSafeTelegramMessage } from "@helpers/telegram"
 
 export const systemTgBot = new TelegramBot(config.systemTelegramToken, { polling: true })
 
 systemTgBot.onText(/\/chats/, async msg => {
   const { chat } = msg
-  if (chat.id !== config.systemTelegramChatId) return systemTgBot.sendMessage(chat.id, "Access denied")
+  if (chat.id !== config.systemTelegramChatId) {
+    return sendSafeTelegramMessage(systemTgBot, chat.id, "Access denied")
+  }
 
   const chatsResponse = await entities.Chat.find({ order: { count: "DESC" } })
 
@@ -22,7 +25,7 @@ systemTgBot.onText(/\/chats/, async msg => {
     return acc + resultItem
   }, "")
 
-  if (!result) systemTgBot.sendMessage(chat.id, "---")
+  if (!result) return sendSafeTelegramMessage(systemTgBot, chat.id, "---")
 
-  systemTgBot.sendMessage(chat.id, result)
+  return sendSafeTelegramMessage(systemTgBot, chat.id, result)
 })

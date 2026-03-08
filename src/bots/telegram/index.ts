@@ -4,6 +4,7 @@ import config from "@root/config"
 
 import { entities } from "@database/data-source"
 import { tgLog } from "@helpers/logger"
+import { sendSafeTelegramMessage } from "@helpers/telegram"
 import { convertToWav } from "@services/ffmpeg"
 import { recognizeAudio } from "@services/recognizer"
 import Storage from "@services/storage"
@@ -196,13 +197,17 @@ class Telegram {
   }
 
   private sendMessage(chat: Chat, message: string, inlineKeyboard?: Array<Array<InlineKeyboardButton>>) {
-    this.bot.sendMessage(chat.id, message, {
+    const options: TelegramBot.SendMessageOptions = {
       parse_mode: "Markdown",
       ...(inlineKeyboard && {
         reply_markup: {
           inline_keyboard: inlineKeyboard
         }
       })
+    }
+
+    void sendSafeTelegramMessage(this.bot, chat.id, message, options).catch(error => {
+      console.error("Telegram sendMessage error", error)
     })
   }
 }
